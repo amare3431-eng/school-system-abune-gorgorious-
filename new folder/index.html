@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>የተማሪዎች ውጤት እና አጠቃላይ መረጃ ማስተዳደሪያ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Noto Sans Ethiopic) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        ethiopian: {
+                            green: '#009b48',
+                            yellow: '#fffe00',
+                            red: '#ef2b2d',
+                            blue: '#1e40af'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans Ethiopic', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans Ethiopic', sans-serif;
+            background-color: #f8fafc;
+        }
+        .sidebar-item-active {
+            background-color: #15803d;
+            color: #ffffff;
+            border-right: 4px solid #facc15;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background: white;
+                color: black;
+            }
+            .modal-container {
+                position: static !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col md:flex-row">
+
+    <!-- Mobile Header Navigation -->
+    <div class="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center no-print">
+        <div class="flex items-center space-x-3 space-x-reverse">
+            <div class="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-lg text-white">
+                ት/ቤት
+            </div>
+            <span class="font-bold text-lg">የተማሪዎች ማኔጅመንት</span>
+        </div>
+        <button id="mobileMenuBtn" class="text-slate-300 hover:text-white focus:outline-none">
+            <i class="fa-solid fa-bars text-2xl"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-full md:w-64 bg-slate-900 text-slate-300 flex-shrink-0 hidden md:flex flex-col justify-between min-h-screen no-print transition-all duration-300 z-20">
+        <div>
+            <!-- Branding Header -->
+            <div class="p-5 border-b border-slate-800 flex items-center space-x-3 space-x-reverse">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-green-500 flex items-center justify-center font-extrabold text-white text-xl shadow-lg">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-white leading-tight">የትምህርት ቤት ሥርዓት</h1>
+                    <p class="text-xs text-slate-400">የውጤት መቆጣጠሪያ ፖርታል</p>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="mt-6 px-3 space-y-1">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="sidebar-item sidebar-item-active w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fa-solid fa-chart-pie w-6 text-lg"></i>
+                    <span>ዳሽቦርድ (Dashboard)</span>
+                </button>
+                
+                <button onclick="switchTab('students')" id="nav-students" class="sidebar-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white transition-colors">
+                    <i class="fa-solid fa-users w-6 text-lg"></i>
+                    <span>የተማሪዎች ዝርዝር</span>
+                </button>
+
+                <button onclick="switchTab('add-student')" id="nav-add-student" class="sidebar-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white transition-colors">
+                    <i class="fa-solid fa-user-plus w-6 text-lg"></i>
+                    <span>አዲስ ተማሪ መመዝገቢያ</span>
+                </button>
+
+                <button onclick="switchTab('analytics')" id="nav-analytics" class="sidebar-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white transition-colors">
+                    <i class="fa-solid fa-chart-line w-6 text-lg"></i>
+                    <span>የውጤት ትንተና</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
+            <p>የተማሪዎች መረጃ ሲስተም v2.5</p>
+            <p class="mt-1">© 2026 መብቱ በሕግ የተጠበቀ ነው</p>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+        <!-- Top Header Bar (Desktop) -->
+        <header class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center no-print">
+            <div>
+                <h2 id="pageTitle" class="text-xl font-bold text-slate-800">አጠቃላይ ማጠቃለያ (Dashboard)</h2>
+                <p class="text-xs text-slate-500">የ2018 ዓ.ም የትምህርት ዘመን የመጀመሪያ መንፈቀ ዓመት</p>
+            </div>
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <button onclick="exportToCSV()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-medium px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors">
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span>መረጃ በ CSV አውርድ</span>
+                </button>
+                <div class="border-r border-slate-200 h-6"></div>
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <div class="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600">
+                        መም
+                    </div>
+                    <div class="hidden sm:block text-left">
+                        <p class="text-xs font-semibold text-slate-700">መምህር የኔሰው</p>
+                        <p class="text-xs text-slate-400">ዋና አስተዳዳሪ</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Body -->
+        <div class="p-4 md:p-6 space-y-6 flex-1">
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                
+                <!-- Stat Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Total Students -->
+                    <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">ጠቅላላ ተማሪዎች</p>
+                            <h3 id="statTotalStudents" class="text-2xl font-black text-slate-800 mt-1">0</h3>
+                            <span class="inline-block mt-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-medium">በሁሉም ክፍሎች</span>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-user-graduate"></i>
+                        </div>
+                    </div>
+
+                    <!-- Average Score -->
+                    <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">አማካይ ውጤት</p>
+                            <h3 id="statAverageScore" class="text-2xl font-black text-slate-800 mt-1">0%</h3>
+                            <span class="inline-block mt-2 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded font-medium">አጠቃላይ አማካይ</span>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-calculator"></i>
+                        </div>
+                    </div>
+
+                    <!-- Top Class -->
+                    <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">ከፍተኛ ውጤት ያስመዘገበ ክፍል</p>
+                            <h3 id="statTopClass" class="text-2xl font-black text-slate-800 mt-1">-</h3>
+                            <span class="inline-block mt-2 text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded font-medium">በአማካይ ውጤት</span>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                    </div>
+
+                    <!-- Pass Rate -->
+                    <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">የማለፍ ምጣኔ (Pass Rate)</p>
+                            <h3 id="statPassRate" class="text-2xl font-black text-slate-800 mt-1">0%</h3>
+                            <span class="inline-block mt-2 text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded font-medium">ከ 50% በላይ ያመጡ</span>
+                        </div>
+                        <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard & Recent Dashboard Table -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- High Achievers Leaderboard -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-trophy text-amber-500"></i>
+                                <span>የከፍተኛ ውጤት ባለቤቶች (Top 5)</span>
+                            </h3>
+                        </div>
+                        <div id="leaderboardList" class="space-y-3">
+                            <!-- Dynamic Content loaded via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Subject Overview Chart -->
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-book-open text-emerald-600"></i>
+                            <span>የትምህርት ዓይነቶች አማካይ ውጤት</span>
+                        </h3>
+                        <div class="h-64">
+                            <canvas id="dashboardSubjectChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 2: STUDENT DIRECTORY & SEARCH -->
+            <section id="tab-students" class="tab-content hidden space-y-4">
+                
+                <!-- Filter and Search Header -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center">
+                    
+                    <!-- Search input -->
+                    <div class="relative w-full md:w-80">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="searchInput" oninput="filterStudents()" placeholder="በስም ወይም በመታወቂያ ይፈልጉ..." class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+
+                    <div class="flex flex-wrap gap-3 w-full md:w-auto">
+                        <!-- Grade Filter -->
+                        <select id="classFilter" onchange="filterStudents()" class="border border-slate-300 rounded-lg text-sm px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="ALL">ሁሉም ክፍሎች</option>
+                            <option value="9ኛ ክፍል">9ኛ ክፍል</option>
+                            <option value="10ኛ ክፍል">10ኛ ክፍል</option>
+                            <option value="11ኛ ክፍል">11ኛ ክፍል</option>
+                            <option value="12ኛ ክፍል">12ኛ ክፍል</option>
+                        </select>
+
+                        <!-- Pass/Fail Filter -->
+                        <select id="statusFilter" onchange="filterStudents()" class="border border-slate-300 rounded-lg text-sm px-3 py-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="ALL">ሁሉም ሁኔታ</option>
+                            <option value="አልፏል">ያለፉ</option>
+                            <option value="ወድቋል">የወደቁ</option>
+                        </select>
+
+                        <button onclick="switchTab('add-student')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>አዲስ መዝግብ</span>
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Students Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
+                                    <th class="p-4">መታወቂያ (ID)</th>
+                                    <th class="p-4">የተማሪው ሙሉ ስም</th>
+                                    <th class="p-4">ክፍል</th>
+                                    <th class="p-4">ጾታ</th>
+                                    <th class="p-4">አማካይ ውጤት</th>
+                                    <th class="p-4">ሁኔታ</th>
+                                    <th class="p-4 text-center">ተግባራት</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentTableBody" class="divide-y divide-slate-100 text-sm text-slate-700">
+                                <!-- Loaded via Javascript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Empty State -->
+                    <div id="noDataMessage" class="hidden text-center py-12 text-slate-400">
+                        <i class="fa-solid fa-folder-open text-4xl mb-2"></i>
+                        <p>ምንም ተማሪ አልተገኘም</p>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 3: ADD / EDIT STUDENT -->
+            <section id="tab-add-student" class="tab-content hidden max-w-4xl mx-auto space-y-6">
+                
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="border-b border-slate-200 pb-4 mb-6 flex justify-between items-center">
+                        <div>
+                            <h3 id="formTitle" class="text-lg font-bold text-slate-800">አዲስ ተማሪ መመዝገቢያ ፎርም</h3>
+                            <p class="text-xs text-slate-500">እባክዎ የተማሪውን አጠቃላይ መረጃና የትምህርት ውጤቶች በትክክል ያስገቡ</p>
+                        </div>
+                        <button type="button" onclick="resetForm()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> ፎርሙን አጽዳ
+                        </button>
+                    </div>
+
+                    <form id="studentForm" onsubmit="handleFormSubmit(event)" class="space-y-6">
+                        <input type="hidden" id="editIndex" value="-1">
+
+                        <!-- Personal Information -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-emerald-700 mb-3 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-address-card"></i> የግል መረጃ
+                            </h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">ተማሪ መታወቂያ *</label>
+                                    <input type="text" id="studentId" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="ምሳሌ፡ ETH-1001">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">ሙሉ ስም *</label>
+                                    <input type="text" id="fullName" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="ምሳሌ፡ አበበ ከበደ">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">ክፍል *</label>
+                                    <select id="gradeLevel" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                        <option value="9ኛ ክፍል">9ኛ ክፍል</option>
+                                        <option value="10ኛ ክፍል">10ኛ ክፍል</option>
+                                        <option value="11ኛ ክፍል">11ኛ ክፍል</option>
+                                        <option value="12ኛ ክፍል">12ኛ ክፍል</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">ጾታ *</label>
+                                    <select id="gender" required class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                        <option value="ወንድ">ወንድ</option>
+                                        <option value="ሴት">ሴት</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">የወላጅ/አስተዳዳሪ ስልክ</label>
+                                    <input type="tel" id="parentPhone" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="0911223344">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">የመገኘት መጠን (%)</label>
+                                    <input type="number" id="attendance" min="0" max="100" value="95" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Academic Marks -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-emerald-700 mb-3 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-pen-to-square"></i> የትምህርት ዓይነቶች ውጤት (ከ 100)
+                            </h4>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">ሒሳብ (Maths)</label>
+                                    <input type="number" min="0" max="100" id="scoreMath" required oninput="calculateLiveScore()" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" value="0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">እንግሊዝኛ</label>
+                                    <input type="number" min="0" max="100" id="scoreEnglish" required oninput="calculateLiveScore()" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" value="0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">ሳይንስ (Science)</label>
+                                    <input type="number" min="0" max="100" id="scoreScience" required oninput="calculateLiveScore()" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" value="0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">አማርኛ</label>
+                                    <input type="number" min="0" max="100" id="scoreAmharic" required oninput="calculateLiveScore()" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" value="0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">ኅብረተሰብ</label>
+                                    <input type="number" min="0" max="100" id="scoreSocial" required oninput="calculateLiveScore()" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" value="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Calculation Preview Card -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-wrap justify-between items-center gap-4">
+                            <div>
+                                <span class="text-xs text-slate-500 block">ጠቅላላ ድምር ውጤት:</span>
+                                <span id="liveTotal" class="text-lg font-bold text-slate-800">0 / 500</span>
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-500 block">አማካይ ውጤት:</span>
+                                <span id="liveAverage" class="text-lg font-bold text-emerald-600">0%</span>
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-500 block">የማለፍ ሁኔታ:</span>
+                                <span id="liveStatus" class="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-slate-200 text-slate-600">ያልታወቀ</span>
+                            </div>
+                        </div>
+
+                        <!-- Teacher Comments -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">የመምህር አስተያየት</label>
+                            <textarea id="teacherComment" rows="2" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="ስለ ተማሪው የትምህርት ሁኔታ ተጨማሪ አስተያየት..."></textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="flex justify-end gap-3">
+                            <button type="button" onclick="switchTab('students')" class="px-5 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 font-medium">ሰርዝ</button>
+                            <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium shadow-sm flex items-center gap-2">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                <span>መረጃውን መዝግብ</span>
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+
+            </section>
+
+            <!-- TAB 4: ANALYTICS -->
+            <section id="tab-analytics" class="tab-content hidden space-y-6">
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Grade Distribution Pie Chart -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-emerald-600"></i>
+                            <span>የውጤት ደረጃዎች ስርጭት (Grade Distribution)</span>
+                        </h3>
+                        <div class="h-64 flex justify-center">
+                            <canvas id="gradeDistributionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Pass vs Fail Chart -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-bar text-blue-600"></i>
+                            <span>በክፍል ደረጃ የማለፍ ሁኔታ (Pass/Fail)</span>
+                        </h3>
+                        <div class="h-64">
+                            <canvas id="passFailChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+    </main>
+
+    <!-- STUDENT REPORT CARD MODAL -->
+    <div id="studentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print-bg">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            
+            <!-- Modal Header -->
+            <div class="bg-slate-900 text-white p-5 flex justify-between items-center no-print">
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <i class="fa-solid fa-id-card text-emerald-400 text-xl"></i>
+                    <h3 class="font-bold text-lg">የተማሪ ውጤት ካርድ (Report Card)</h3>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content Body -->
+            <div id="modalPrintArea" class="p-6 overflow-y-auto space-y-6">
+                
+                <!-- School Header for Print -->
+                <div class="text-center border-b border-slate-200 pb-4">
+                    <h2 class="text-xl font-black text-slate-900">ብርሃን እና ሰላም የትምህርት ቤት</h2>
+                    <p class="text-xs text-slate-500">የተማሪ ውጤት መግለጫ ወረቀት - 2018 ዓ.ም</p>
+                </div>
+
+                <!-- Student Info Header -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                        <span class="text-slate-400 block">የተማሪ ስም:</span>
+                        <strong id="modalName" class="text-sm text-slate-800">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">መታወቂያ ቁጥር:</span>
+                        <strong id="modalId" class="text-sm text-slate-800">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">ክፍል:</span>
+                        <strong id="modalGrade" class="text-sm text-slate-800">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">ጾታ:</span>
+                        <strong id="modalGender" class="text-sm text-slate-800">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">የወላጅ ስልክ:</span>
+                        <strong id="modalPhone" class="text-sm text-slate-800">-</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">የመገኘት መጠን:</span>
+                        <strong id="modalAttendance" class="text-sm text-emerald-600">-</strong>
+                    </div>
+                </div>
+
+                <!-- Detailed Subject Marks Table -->
+                <div>
+                    <h4 class="font-bold text-sm text-slate-800 mb-2">የትምህርት ውጤቶች ዝርዝር</h4>
+                    <table class="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden">
+                        <thead class="bg-slate-100 text-slate-700 uppercase font-semibold">
+                            <tr>
+                                <th class="p-3 border-b">የትምህርት ዓይነት</th>
+                                <th class="p-3 border-b text-center">ያገኙት ውጤት (100%)</th>
+                                <th class="p-3 border-b text-center">የደረጃ ፊደል (Grade)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalScoresTable" class="divide-y divide-slate-200">
+                            <!-- Filled dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Summary Banner -->
+                <div class="grid grid-cols-3 gap-3 text-center bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
+                    <div>
+                        <span class="text-xs text-slate-500 block">ጠቅላላ ድምር</span>
+                        <span id="modalTotal" class="text-base font-bold text-slate-800">0/500</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-500 block">አማካይ ውጤት</span>
+                        <span id="modalAverage" class="text-base font-bold text-emerald-700">0%</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-500 block">የማለፍ ሁኔታ</span>
+                        <span id="modalStatus" class="text-base font-bold text-slate-800">-</span>
+                    </div>
+                </div>
+
+                <!-- Comments -->
+                <div class="border border-slate-200 p-3 rounded-xl">
+                    <span class="text-xs font-semibold text-slate-500 block mb-1">የመምህር አስተያየት:</span>
+                    <p id="modalComment" class="text-xs text-slate-700 italic">"ምንም አስተያየት የለም"</p>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer Controls -->
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-3 no-print">
+                <button onclick="closeModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">ዝጋ</button>
+                <button onclick="window.print()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-print"></i>
+                    <span>ካርዱን አትም (Print)</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Sample Realistic Ethiopian Student Data
+        const initialStudents = [
+            {
+                id: "ETH-1001",
+                name: "አበበ ከበደ",
+                grade: "10ኛ ክፍል",
+                gender: "ወንድ",
+                phone: "0911121314",
+                attendance: 96,
+                scores: { math: 88, english: 76, science: 90, amharic: 85, social: 82 },
+                comment: "በጣም ጎበዝ እና ትጉ ተማሪ ነው።"
+            },
+            {
+                id: "ETH-1002",
+                name: "አልማዝ ተስፋዬ",
+                grade: "12ኛ ክፍል",
+                gender: "ሴት",
+                phone: "0922232425",
+                attendance: 98,
+                scores: { math: 95, english: 92, science: 96, amharic: 89, social: 94 },
+                comment: "የክፍሉ ከፍተኛ ውጤት ያስመዘገበች አርአያ ተማሪ።"
+            },
+            {
+                id: "ETH-1003",
+                name: "ዳዊት ኃይሉ",
+                grade: "9ኛ ክፍል",
+                gender: "ወንድ",
+                phone: "0933343536",
+                attendance: 84,
+                scores: { math: 42, english: 48, science: 50, amharic: 55, social: 40 },
+                comment: "ተጨማሪ ትኩረት እና ድጋፍ ያስፈልገዋል።"
+            },
+            {
+                id: "ETH-1004",
+                name: "ሶፍያ መሐመድ",
+                grade: "11ኛ ክፍል",
+                gender: "ሴት",
+                phone: "0944454647",
+                attendance: 91,
+                scores: { math: 78, english: 85, science: 80, amharic: 88, social: 75 },
+                comment: "ጥሩ ስነ-ምግባር ያላት እና ንቁ ተሳታፊ።"
+            },
+            {
+                id: "ETH-1005",
+                name: "ዮናስ አለሙ",
+                grade: "10ኛ ክፍል",
+                gender: "ወንድ",
+                phone: "0955565758",
+                attendance: 89,
+                scores: { math: 65, english: 58, science: 70, amharic: 62, social: 68 },
+                comment: "መካከለኛ ውጤት ያለው፣ የበለጠ መጣጣር ይችላል።"
+            },
+            {
+                id: "ETH-1006",
+                name: "ሄለን ገብሬ",
+                grade: "12ኛ ክፍል",
+                gender: "ሴት",
+                phone: "0966676869",
+                attendance: 94,
+                scores: { math: 82, english: 90, science: 86, amharic: 91, social: 88 },
+                comment: "በሁሉም የትምህርት ዓይነቶች ቋሚ ጥሩ ውጤት ታስመዘግባለች።"
+            }
+        ];
+
+        // Global State
+        let students = [];
+        let dashboardChart = null;
+        let gradeDistChart = null;
+        let passFailChart = null;
+
+        // Initialize Application
+        window.onload = function() {
+            // Load Data from LocalStorage or Default
+            const savedData = localStorage.getItem('ethio_students_data');
+            if (savedData) {
+                try {
+                    students = JSON.parse(savedData);
+                } catch(e) {
+                    students = [...initialStudents];
+                }
+            } else {
+                students = [...initialStudents];
+                saveToLocalStorage();
+            }
+
+            // Mobile menu toggle
+            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('hidden');
+            });
+
+            // Calculate and Render All
+            refreshAllData();
+            calculateLiveScore();
+        };
+
+        function saveToLocalStorage() {
+            localStorage.setItem('ethio_students_data', JSON.stringify(students));
+        }
+
+        // Helper Calculations
+        function calculateStudentStats(scores) {
+            const values = Object.values(scores);
+            const total = values.reduce((a, b) => Number(a) + Number(b), 0);
+            const average = (total / values.length).toFixed(1);
+            const status = average >= 50 ? "አልፏል" : "ወድቋል";
+            return { total, average, status };
+        }
+
+        function getGradeLetter(score) {
+            if (score >= 90) return 'A+';
+            if (score >= 83) return 'A';
+            if (score >= 75) return 'B+';
+            if (score >= 68) return 'B';
+            if (score >= 60) return 'C+';
+            if (score >= 50) return 'C';
+            if (score >= 40) return 'D';
+            return 'F';
+        }
+
+        // Navigation Switching
+        function switchTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            
+            // Remove active classes from sidebar links
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('sidebar-item-active');
+                item.classList.add('hover:bg-slate-800');
+            });
+
+            // Show selected tab content
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            // Highlight selected nav button
+            const navBtn = document.getElementById(`nav-${tabId}`);
+            if (navBtn) {
+                navBtn.classList.add('sidebar-item-active');
+                navBtn.classList.remove('hover:bg-slate-800');
+            }
+
+            // Update Header Title
+            const titleMap = {
+                'dashboard': 'አጠቃላይ ማጠቃለያ (Dashboard)',
+                'students': 'የተማሪዎች ዝርዝር እና መፈለጊያ',
+                'add-student': 'አዲስ ተማሪ መመዝገቢያ / ማስተካከያ',
+                'analytics': 'የውጤት ትንተና እና ግራፎች'
+            };
+            document.getElementById('pageTitle').innerText = titleMap[tabId] || 'የተማሪዎች ማኔጅመንት';
+
+            // Re-render specific view charts if needed
+            if(tabId === 'analytics') {
+                renderAnalyticsCharts();
+            } else if(tabId === 'dashboard') {
+                renderDashboardCharts();
+            }
+        }
+
+        // Refresh Master Function
+        function refreshAllData() {
+            renderDashboardStats();
+            renderStudentsTable(students);
+            renderLeaderboard();
+            renderDashboardCharts();
+        }
+
+        // Render Dashboard Overview Cards
+        function renderDashboardStats() {
+            const total = students.length;
+            document.getElementById('statTotalStudents').innerText = total;
+
+            if (total === 0) {
+                document.getElementById('statAverageScore').innerText = "0%";
+                document.getElementById('statTopClass').innerText = "-";
+                document.getElementById('statPassRate').innerText = "0%";
+                return;
+            }
+
+            // Calculate Overall Average
+            let sumAverages = 0;
+            let passCount = 0;
+            let classScores = {};
+
+            students.forEach(s => {
+                const stats = calculateStudentStats(s.scores);
+                const avgNum = parseFloat(stats.average);
+                sumAverages += avgNum;
+
+                if (avgNum >= 50) passCount++;
+
+                // Group by Class
+                if (!classScores[s.grade]) {
+                    classScores[s.grade] = { sum: 0, count: 0 };
+                }
+                classScores[s.grade].sum += avgNum;
+                classScores[s.grade].count++;
+            });
+
+            const overallAvg = (sumAverages / total).toFixed(1);
+            const passRate = ((passCount / total) * 100).toFixed(1);
+
+            // Find Top Performing Class
+            let topClass = "-";
+            let highestClassAvg = -1;
+
+            Object.keys(classScores).forEach(c => {
+                const avg = classScores[c].sum / classScores[c].count;
+                if (avg > highestClassAvg) {
+                    highestClassAvg = avg;
+                    topClass = c;
+                }
+            });
+
+            document.getElementById('statAverageScore').innerText = `${overallAvg}%`;
+            document.getElementById('statPassRate').innerText = `${passRate}%`;
+            document.getElementById('statTopClass').innerText = topClass;
+        }
+
+        // Render Leaderboard (Top 5 Achievers)
+        function renderLeaderboard() {
+            const leaderboardContainer = document.getElementById('leaderboardList');
+            leaderboardContainer.innerHTML = '';
+
+            // Sort students descending by average
+            const sorted = [...students].map(s => {
+                const stats = calculateStudentStats(s.scores);
+                return { ...s, total: stats.total, average: stats.average };
+            }).sort((a, b) => b.average - a.average).slice(0, 5);
+
+            sorted.forEach((st, index) => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-3 rounded-lg border border-slate-100 bg-slate-50 hover:bg-slate-100 transition";
+                
+                let badgeColor = "bg-slate-200 text-slate-700";
+                if (index === 0) badgeColor = "bg-amber-400 text-slate-900 font-bold";
+                else if (index === 1) badgeColor = "bg-slate-300 text-slate-800 font-bold";
+                else if (index === 2) badgeColor = "bg-amber-600 text-white font-bold";
+
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <span class="w-7 h-7 rounded-full ${badgeColor} flex items-center justify-center text-xs">
+                            ${index + 1}
+                        </span>
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-800">${st.name}</h4>
+                            <p class="text-[11px] text-slate-400">${st.grade} • ${st.id}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-black text-emerald-600 text-sm">${st.average}%</span>
+                        <span class="block text-[10px] text-slate-400">${st.total}/500</span>
+                    </div>
+                `;
+                leaderboardContainer.appendChild(item);
+            });
+        }
+
+        // Render Main Students Table
+        function renderStudentsTable(dataList) {
+            const tbody = document.getElementById('studentTableBody');
+            const noDataMsg = document.getElementById('noDataMessage');
+            tbody.innerHTML = '';
+
+            if (dataList.length === 0) {
+                noDataMsg.classList.remove('hidden');
+                return;
+            } else {
+                noDataMsg.classList.add('hidden');
+            }
+
+            dataList.forEach((student) => {
+                const actualIndex = students.findIndex(s => s.id === student.id);
+                const stats = calculateStudentStats(student.scores);
+                const statusBadge = stats.status === 'አልፏል' 
+                    ? '<span class="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-xs font-semibold">አልፏል</span>'
+                    : '<span class="bg-rose-100 text-rose-800 px-2.5 py-1 rounded-full text-xs font-semibold">ወድቋል</span>';
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
+                tr.innerHTML = `
+                    <td class="p-4 font-mono text-xs font-semibold text-slate-500">${student.id}</td>
+                    <td class="p-4 font-bold text-slate-800">${student.name}</td>
+                    <td class="p-4 text-slate-600">${student.grade}</td>
+                    <td class="p-4 text-slate-600">${student.gender}</td>
+                    <td class="p-4 font-extrabold text-slate-800">${stats.average}%</td>
+                    <td class="p-4">${statusBadge}</td>
+                    <td class="p-4 text-center">
+                        <div class="flex items-center justify-center space-x-2 space-x-reverse">
+                            <button onclick="openModal(${actualIndex})" title="ካርድ እይ" class="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button onclick="editStudent(${actualIndex})" title="አስተካክል" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="deleteStudent(${actualIndex})" title="ሰርዝ" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Live Dynamic Filters (Search & Class/Status Filter)
+        function filterStudents() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const selectedClass = document.getElementById('classFilter').value;
+            const selectedStatus = document.getElementById('statusFilter').value;
+
+            const filtered = students.filter(student => {
+                const stats = calculateStudentStats(student.scores);
+                const matchesQuery = student.name.toLowerCase().includes(query) || student.id.toLowerCase().includes(query);
+                const matchesClass = selectedClass === 'ALL' || student.grade === selectedClass;
+                const matchesStatus = selectedStatus === 'ALL' || stats.status === selectedStatus;
+
+                return matchesQuery && matchesClass && matchesStatus;
+            });
+
+            renderStudentsTable(filtered);
+        }
+
+        // Handle Add/Edit Student Form
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const editIdx = parseInt(document.getElementById('editIndex').value);
+            const newStudent = {
+                id: document.getElementById('studentId').value.trim(),
+                name: document.getElementById('fullName').value.trim(),
+                grade: document.getElementById('gradeLevel').value,
+                gender: document.getElementById('gender').value,
+                phone: document.getElementById('parentPhone').value.trim() || 'አልተጠቀሰም',
+                attendance: parseInt(document.getElementById('attendance').value) || 100,
+                scores: {
+                    math: parseFloat(document.getElementById('scoreMath').value) || 0,
+                    english: parseFloat(document.getElementById('scoreEnglish').value) || 0,
+                    science: parseFloat(document.getElementById('scoreScience').value) || 0,
+                    amharic: parseFloat(document.getElementById('scoreAmharic').value) || 0,
+                    social: parseFloat(document.getElementById('scoreSocial').value) || 0,
+                },
+                comment: document.getElementById('teacherComment').value.trim()
+            };
+
+            if (editIdx >= 0) {
+                // Update Existing
+                students[editIdx] = newStudent;
+            } else {
+                // Check ID Uniqueness
+                if(students.some(s => s.id === newStudent.id)) {
+                    alert('ይህ ተማሪ መታወቂያ ቀደም ሲል ተመዝግቧል። እባክዎ የተለየ መታወቂያ ይጠቀሙ።');
+                    return;
+                }
+                // Add New
+                students.push(newStudent);
+            }
+
+            saveToLocalStorage();
+            refreshAllData();
+            resetForm();
+            switchTab('students');
+        }
+
+        // Calculate Live Average inside Add Student Form
+        function calculateLiveScore() {
+            const math = parseFloat(document.getElementById('scoreMath').value) || 0;
+            const english = parseFloat(document.getElementById('scoreEnglish').value) || 0;
+            const science = parseFloat(document.getElementById('scoreScience').value) || 0;
+            const amharic = parseFloat(document.getElementById('scoreAmharic').value) || 0;
+            const social = parseFloat(document.getElementById('scoreSocial').value) || 0;
+
+            const total = math + english + science + amharic + social;
+            const average = (total / 5).toFixed(1);
+
+            document.getElementById('liveTotal').innerText = `${total} / 500`;
+            document.getElementById('liveAverage').innerText = `${average}%`;
+
+            const statusEl = document.getElementById('liveStatus');
+            if (average >= 50) {
+                statusEl.innerText = "አልፏል";
+                statusEl.className = "inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800";
+            } else {
+                statusEl.innerText = "ወድቋል";
+                statusEl.className = "inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800";
+            }
+        }
+
+        // Edit Student Action
+        function editStudent(index) {
+            const st = students[index];
+            document.getElementById('editIndex').value = index;
+            document.getElementById('formTitle').innerText = "የተማሪ መረጃ ማስተካከያ";
+
+            document.getElementById('studentId').value = st.id;
+            document.getElementById('fullName').value = st.name;
+            document.getElementById('gradeLevel').value = st.grade;
+            document.getElementById('gender').value = st.gender;
+            document.getElementById('parentPhone').value = st.phone;
+            document.getElementById('attendance').value = st.attendance;
+
+            document.getElementById('scoreMath').value = st.scores.math;
+            document.getElementById('scoreEnglish').value = st.scores.english;
+            document.getElementById('scoreScience').value = st.scores.science;
+            document.getElementById('scoreAmharic').value = st.scores.amharic;
+            document.getElementById('scoreSocial').value = st.scores.social;
+
+            document.getElementById('teacherComment').value = st.comment || '';
+
+            calculateLiveScore();
+            switchTab('add-student');
+        }
+
+        // Delete Student Action
+        function deleteStudent(index) {
+            if (confirm(`እርግጠኛ ነዎት የተማሪ ${students[index].name} መረጃ እንዲሰረዝ ይፈልጋሉ?`)) {
+                students.splice(index, 1);
+                saveToLocalStorage();
+                refreshAllData();
+            }
+        }
+
+        // Reset Form
+        function resetForm() {
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('formTitle').innerText = "አዲስ ተማሪ መመዝገቢያ ፎርም";
+            document.getElementById('studentForm').reset();
+            calculateLiveScore();
+        }
+
+        // Modal Action View
+        function openModal(index) {
+            const st = students[index];
+            const stats = calculateStudentStats(st.scores);
+
+            document.getElementById('modalName').innerText = st.name;
+            document.getElementById('modalId').innerText = st.id;
+            document.getElementById('modalGrade').innerText = st.grade;
+            document.getElementById('modalGender').innerText = st.gender;
+            document.getElementById('modalPhone').innerText = st.phone;
+            document.getElementById('modalAttendance').innerText = `${st.attendance}%`;
+
+            // Render Subjects Table inside Modal
+            const subjectNames = {
+                math: "ሒሳብ (Mathematics)",
+                english: "እንግሊዝኛ (English)",
+                science: "ሳይንስ (Science)",
+                amharic: "አማርኛ (Amharic)",
+                social: "ኅብረተሰብ (Social Studies)"
+            };
+
+            const tbody = document.getElementById('modalScoresTable');
+            tbody.innerHTML = '';
+
+            Object.keys(st.scores).forEach(subKey => {
+                const score = st.scores[subKey];
+                const letter = getGradeLetter(score);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 border-b font-medium text-slate-700">${subjectNames[subKey]}</td>
+                    <td class="p-3 border-b text-center font-bold text-slate-800">${score}</td>
+                    <td class="p-3 border-b text-center font-bold text-emerald-700">${letter}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('modalTotal').innerText = `${stats.total}/500`;
+            document.getElementById('modalAverage').innerText = `${stats.average}%`;
+            document.getElementById('modalStatus').innerText = stats.status;
+            document.getElementById('modalComment').innerText = st.comment ? `"${st.comment}"` : '"ምንም አስተያየት አልተሰጠም"';
+
+            document.getElementById('studentModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('studentModal').classList.add('hidden');
+        }
+
+        // Export Data to CSV
+        function exportToCSV() {
+            if (students.length === 0) {
+                alert('የሚወርድ መረጃ የለም!');
+                return;
+            }
+
+            let csv = 'መታወቂያ,ሙሉ ስም,ክፍል,ጾታ,ሒሳብ,እንግሊዝኛ,ሳይንስ,አማርኛ,ኅብረተሰብ,ጠቅላላ,አማካይ,ሁኔታ\n';
+            students.forEach(st => {
+                const stats = calculateStudentStats(st.scores);
+                csv += `"${st.id}","${st.name}","${st.grade}","${st.gender}",${st.scores.math},${st.scores.english},${st.scores.science},${st.scores.amharic},${st.scores.social},${stats.total},${stats.average},"${stats.status}"\n`;
+            });
+
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'የተማሪዎች_ውጤት_መረጃ.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Render Dashboard Charts (Subject Averages)
+        function renderDashboardCharts() {
+            const ctx = document.getElementById('dashboardSubjectChart').getContext('2d');
+
+            // Compute averages per subject
+            const subjects = { math: 0, english: 0, science: 0, amharic: 0, social: 0 };
+            const count = students.length;
+
+            if (count > 0) {
+                students.forEach(s => {
+                    subjects.math += s.scores.math;
+                    subjects.english += s.scores.english;
+                    subjects.science += s.scores.science;
+                    subjects.amharic += s.scores.amharic;
+                    subjects.social += s.scores.social;
+                });
+            }
+
+            const averages = [
+                count ? (subjects.math / count).toFixed(1) : 0,
+                count ? (subjects.english / count).toFixed(1) : 0,
+                count ? (subjects.science / count).toFixed(1) : 0,
+                count ? (subjects.amharic / count).toFixed(1) : 0,
+                count ? (subjects.social / count).toFixed(1) : 0,
+            ];
+
+            if (dashboardChart) dashboardChart.destroy();
+
+            dashboardChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['ሒሳብ', 'እንግሊዝኛ', 'ሳይንስ', 'አማርኛ', 'ኅብረተሰብ'],
+                    datasets: [{
+                        label: 'የትምህርት ዓይነቶች አማካይ ውጤት (%)',
+                        data: averages,
+                        backgroundColor: '#16a34a',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 100 }
+                    }
+                }
+            });
+        }
+
+        // Render Analytics Tab Charts
+        function renderAnalyticsCharts() {
+            // Chart 1: Grade Distribution
+            const gradeCounts = { 'A (83-100)': 0, 'B (68-82)': 0, 'C (50-67)': 0, 'F (<50)': 0 };
+            students.forEach(s => {
+                const avg = calculateStudentStats(s.scores).average;
+                if (avg >= 83) gradeCounts['A (83-100)']++;
+                else if (avg >= 68) gradeCounts['B (68-82)']++;
+                else if (avg >= 50) gradeCounts['C (50-67)']++;
+                else gradeCounts['F (<50)']++;
+            });
+
+            const ctxDist = document.getElementById('gradeDistributionChart').getContext('2d');
+            if (gradeDistChart) gradeDistChart.destroy();
+
+            gradeDistChart = new Chart(ctxDist, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(gradeCounts),
+                    datasets: [{
+                        data: Object.values(gradeCounts),
+                        backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // Chart 2: Pass vs Fail per Grade Level
+            const classes = ['9ኛ ክፍል', '10ኛ ክፍል', '11ኛ ክፍል', '12ኛ ክፍል'];
+            const passPerClass = [0, 0, 0, 0];
+            const failPerClass = [0, 0, 0, 0];
+
+            students.forEach(s => {
+                const stats = calculateStudentStats(s.scores);
+                const classIndex = classes.indexOf(s.grade);
+                if (classIndex !== -1) {
+                    if (stats.status === 'አልፏል') passPerClass[classIndex]++;
+                    else failPerClass[classIndex]++;
+                }
+            });
+
+            const ctxPassFail = document.getElementById('passFailChart').getContext('2d');
+            if (passFailChart) passFailChart.destroy();
+
+            passFailChart = new Chart(ctxPassFail, {
+                type: 'bar',
+                data: {
+                    labels: classes,
+                    datasets: [
+                        { label: 'ያለፉ (Pass)', data: passPerClass, backgroundColor: '#16a34a' },
+                        { label: 'የወደቁ (Fail)', data: failPerClass, backgroundColor: '#dc2626' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

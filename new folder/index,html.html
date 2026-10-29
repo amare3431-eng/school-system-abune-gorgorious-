@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="am" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ደብረ ብርሃን ማዕከል አቡነ ጎርጎርዮስ ትምህርት ቤት - የትምህርት ቤት ማስተዳደሪያ ሶፍትዌር</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Noto Sans Ethiopic) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for visual data -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS for Excel (.xlsx / .xls) Upload & Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans Ethiopic', sans-serif;
+            background-color: #f8fafc;
+            touch-action: manipulation;
+        }
+        .sidebar-item-active {
+            background-color: #1e293b;
+            color: #fbbf24;
+            border-right: 4px solid #f59e0b;
+        }
+        /* Mobile-optimized table responsiveness */
+        .table-responsive-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .card-print {
+                box-shadow: none !important;
+                border: 2px solid #000 !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased flex h-screen overflow-hidden">
+
+    <!-- LOGIN MODAL / SCREEN -->
+    <div id="login-modal" class="fixed inset-0 z-50 bg-slate-950 bg-opacity-90 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md my-auto overflow-hidden border border-slate-200">
+            <div class="bg-slate-900 text-white p-5 sm:p-6 text-center relative">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 rounded-full border-2 border-amber-400 bg-slate-800 p-1">
+                    <svg viewBox="0 0 200 200" class="w-full h-full">
+                        <circle cx="100" cy="100" r="95" fill="#0f172a" stroke="#fbbf24" stroke-width="8"/>
+                        <path d="M 100 52 L 100 124 M 70 80 L 130 80" stroke="#fbbf24" stroke-width="12" stroke-linecap="round"/>
+                        <circle cx="100" cy="80" r="18" fill="none" stroke="#fef3c7" stroke-width="4"/>
+                    </svg>
+                </div>
+                <h2 class="text-sm sm:text-base font-extrabold text-amber-400">ደብረ ብርሃን ማዕከል አቡነ ጎርጎርዮስ ት/ቤት</h2>
+                <p class="text-[11px] sm:text-xs text-slate-300 mt-1">የስርዓቱ መግቢያ ገጽ (Role-Based Authentication)</p>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="p-4 sm:p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">የተጠቃሚ ሚና ይምረጡ (Select User Role)</label>
+                    <select id="login-role" onchange="updateLoginCredentialsHint()" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-slate-50 font-semibold text-slate-800">
+                        <option value="office_head">የቢሮ ኃላፊ (Office Head / Director)</option>
+                        <option value="principal">ርዕሰ መምህር (Principal)</option>
+                        <option value="homeroom">የክፍል ስም ጠሪ (Homeroom Teacher)</option>
+                        <option value="subject_teacher">የሰብጀክት መምህር (Subject Teacher)</option>
+                        <option value="student">ተማሪ (Student)</option>
+                        <option value="parent">ወላጅ (Parent)</option>
+                    </select>
+                </div>
+
+                <div id="student-id-field" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">የተማሪ መታወቂያ (Student ID)</label>
+                    <input type="text" id="login-student-id" placeholder="ምሳሌ: STU-1001" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">የይለፍ ቃል / ፓስወርድ (Password / PIN)</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-[11px] text-amber-900 leading-relaxed" id="login-hint">
+                    <span class="font-bold block mb-0.5"><i class="fa-solid fa-key text-amber-600"></i> የመግቢያ ፓስወርድ፡</span>
+                    <span id="hint-text">የር/መምህር ፓስወርድ፡ <b>admin123</b></span>
+                </div>
+
+                <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 py-3 rounded-lg text-xs sm:text-sm font-extrabold shadow-md transition flex items-center justify-center gap-2 touch-manipulation">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>ወደ ሲስተሙ ግባ</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-100 flex flex-col justify-between transition-all duration-300 transform -translate-x-full md:translate-x-0 no-print shadow-xl md:shadow-none">
+        <div class="overflow-y-auto">
+            <!-- Header Brand with Logo -->
+            <div class="flex items-center space-x-3 space-x-reverse p-4 border-b border-slate-800 bg-slate-950 sticky top-0 z-10">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-amber-400 overflow-hidden bg-amber-500 flex-shrink-0 flex items-center justify-center">
+                    <svg viewBox="0 0 200 200" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="goldGradSide" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#fbbf24"/>
+                                <stop offset="100%" stop-color="#78350f"/>
+                            </linearGradient>
+                            <path id="sideArcTop" d="M 25,100 A 75,75 0 1,1 175,100" />
+                            <path id="sideArcBottom" d="M 175,100 A 75,75 0 0,1 25,100" />
+                        </defs>
+                        <circle cx="100" cy="100" r="95" fill="#0f172a" stroke="url(#goldGradSide)" stroke-width="7"/>
+                        <circle cx="100" cy="100" r="60" fill="#1e293b" stroke="#f59e0b" stroke-width="3"/>
+                        <path d="M 100 52 L 100 124 M 70 80 L 130 80" stroke="#fbbf24" stroke-width="8" stroke-linecap="round"/>
+                        <circle cx="100" cy="80" r="16" fill="none" stroke="#fef3c7" stroke-width="3"/>
+                        <text font-family="'Noto Sans Ethiopic', sans-serif" font-size="11" font-weight="bold" fill="#fef08a">
+                            <textPath href="#sideArcTop" startOffset="50%" text-anchor="middle">
+                                ደብረ ብርሃን ማዕከል አቡነ ጎርጎርዮስ ት/ቤት
+                            </textPath>
+                        </text>
+                        <text font-family="sans-serif" font-size="7" font-weight="bold" fill="#ffffff">
+                            <textPath href="#sideArcBottom" startOffset="50%" text-anchor="middle">
+                                DEBRE BIRHAN CENTER ABUNE GORGORIOS SCHOOL
+                            </textPath>
+                        </text>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-bold text-[11px] sm:text-xs text-amber-400 leading-tight">ደብረ ብርሃን ማዕከል</h1>
+                    <p class="font-extrabold text-xs sm:text-sm text-white">አቡነ ጎርጎርዮስ ት/ቤት</p>
+                    <p class="text-[8px] sm:text-[9px] text-amber-200 mt-0.5 font-sans tracking-tight">ABUNE GORGORIOS SCHOOL</p>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="mt-3 px-2 space-y-1">
+                <button id="nav-dashboard" onclick="switchTab('dashboard')" class="sidebar-btn sidebar-item-active w-full flex items-center space-x-3 space-x-reverse px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-lg transition active:scale-95">
+                    <i class="fa-solid fa-chart-line text-base sm:text-lg w-5"></i>
+                    <span>ዳሽቦርድ (Dashboard)</span>
+                </button>
+                <button id="nav-students" onclick="switchTab('students')" class="sidebar-btn w-full flex items-center space-x-3 space-x-reverse px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition active:scale-95">
+                    <i class="fa-solid fa-user-graduate text-base sm:text-lg w-5"></i>
+                    <span>ተማሪዎች ምዝገባ</span>
+                </button>
+                <button id="nav-attendance" onclick="switchTab('attendance')" class="sidebar-btn w-full flex items-center space-x-3 space-x-reverse px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition active:scale-95">
+                    <i class="fa-solid fa-list-check text-base sm:text-lg w-5"></i>
+                    <span>የሴክሽን ሁኔታ</span>
+                </button>
+                <button id="nav-marks" onclick="switchTab('marks')" class="sidebar-btn w-full flex items-center space-x-3 space-x-reverse px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition active:scale-95">
+                    <i class="fa-solid fa-file-pen text-base sm:text-lg w-5"></i>
+                    <span>ውጤት ማስገቢያ</span>
+                </button>
+                <button id="nav-roster" onclick="switchTab('roster')" class="sidebar-btn w-full flex items-center space-x-3 space-x-reverse px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition active:scale-95">
+                    <i class="fa-solid fa-table-cells text-base sm:text-lg w-5"></i>
+                    <span>የሰሚስተር ሮስተር</span>
+                </button>
+                <button id="nav-analytics" onclick="switchTab('analytics')" class="sidebar-btn w-full flex items-center space-x-3 space-x-reverse px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition active:scale-95">
+                    <i class="fa-solid fa-chart-pie text-base sm:text-lg w-5"></i>
+                    <span>የውጤት ትንተና</span>
+                </button>
+                <button id="nav-reports" onclick="switchTab('reports')" class="sidebar-btn w-full flex items-center space-x-3 space-x-reverse px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition active:scale-95">
+                    <i class="fa-solid fa-id-card text-base sm:text-lg w-5"></i>
+                    <span>የተማሪ ውጤት ካርድ</span>
+                </button>
+                <button id="nav-upload" onclick="switchTab('upload')" class="sidebar-btn w-full flex items-center space-x-3 space-x-reverse px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition active:scale-95">
+                    <i class="fa-solid fa-file-excel text-base sm:text-lg w-5 text-emerald-400"></i>
+                    <span>Excel ፋይል አፕሎድ</span>
+                </button>
+                <button id="nav-change-pwd" onclick="switchTab('change-pwd')" class="sidebar-btn w-full flex items-center space-x-3 space-x-reverse px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition active:scale-95">
+                    <i class="fa-solid fa-key text-base sm:text-lg w-5 text-amber-400"></i>
+                    <span>የይለፍ ቃል ቀይር</span>
+                </button>
+                <button id="nav-settings" onclick="switchTab('settings')" class="sidebar-btn w-full flex items-center space-x-3 space-x-reverse px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition active:scale-95">
+                    <i class="fa-solid fa-database text-base sm:text-lg w-5"></i>
+                    <span>መረጃ ማስቀመጫ</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Footer / Admin Info -->
+        <div class="p-3 sm:p-4 border-t border-slate-800 text-xs text-slate-400 bg-slate-950">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2 space-x-reverse">
+                    <i class="fa-solid fa-user-shield text-blue-400 text-sm sm:text-base"></i>
+                    <div>
+                        <p class="font-medium text-slate-200 text-xs truncate max-w-[110px]" id="admin-name-display">ርዕሰ መምህር (Principal)</p>
+                        <p class="text-[9px]" id="current-user-role-badge">ሙሉ ስልጣን ያለው</p>
+                    </div>
+                </div>
+                <button onclick="logoutUser()" class="p-2 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-800 transition" title="ውጣ">
+                    <i class="fa-solid fa-right-from-bracket text-sm sm:text-base"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="flex-1 flex flex-col h-screen overflow-y-auto bg-gray-50 min-w-0">
+
+        <!-- TOP BAR -->
+        <header class="bg-white shadow-sm border-b border-gray-200 py-2.5 px-3 sm:px-4 flex items-center justify-between no-print sticky top-0 z-20">
+            <div class="flex items-center space-x-2 sm:space-x-3 space-x-reverse min-w-0">
+                <button class="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg active:bg-gray-200 transition" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <svg class="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#fbbf24"/>
+                                <stop offset="50%" stop-color="#d97706"/>
+                                <stop offset="100%" stop-color="#78350f"/>
+                            </linearGradient>
+                            <path id="textArcTop" d="M 25,100 A 75,75 0 1,1 175,100" />
+                            <path id="textArcBottom" d="M 175,100 A 75,75 0 0,1 25,100" />
+                        </defs>
+                        <circle cx="100" cy="100" r="95" fill="#0f172a" stroke="url(#goldGradient)" stroke-width="7"/>
+                        <circle cx="100" cy="100" r="82" fill="none" stroke="#fbbf24" stroke-width="2" stroke-dasharray="4 2"/>
+                        <circle cx="100" cy="100" r="60" fill="#1e293b" stroke="#f59e0b" stroke-width="3"/>
+                        <path d="M 100 52 L 100 124 M 70 80 L 130 80" stroke="#fbbf24" stroke-width="8" stroke-linecap="round"/>
+                        <circle cx="100" cy="80" r="16" fill="none" stroke="#fef3c7" stroke-width="3"/>
+                        <text font-family="'Noto Sans Ethiopic', sans-serif" font-size="12" font-weight="bold" fill="#fef08a">
+                            <textPath href="#textArcTop" startOffset="50%" text-anchor="middle">
+                                ደብረ ብርሃን ማዕከል አቡነ ጎርጎርዮስ ት/ቤት
+                            </textPath>
+                        </text>
+                        <text font-family="sans-serif" font-size="7.5" font-weight="bold" fill="#ffffff" letter-spacing="0.5">
+                            <textPath href="#textArcBottom" startOffset="50%" text-anchor="middle">
+                                DEBRE BIRHAN CENTER ABUNE GORGORIOS SCHOOL
+                            </textPath>
+                        </text>
+                    </svg>
+                    <div class="truncate">
+                        <h2 id="page-title" class="text-sm sm:text-base font-bold text-gray-800 leading-tight truncate">ደብረ ብርሃን ማዕከል አቡነ ጎርጎርዮስ ት/ቤት</h2>
+                        <p class="text-[10px] sm:text-xs text-blue-700 font-semibold truncate hidden sm:block">DEBRE BIRHAN CENTER ABUNE GORGORIOS SCHOOL</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 sm:space-x-4 space-x-reverse flex-shrink-0">
+                <span id="offline-badge" class="px-2 py-0.5 sm:px-3 sm:py-1 bg-green-100 text-green-800 rounded-full text-[10px] sm:text-xs font-semibold flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span class="hidden sm:inline">ከመስመር ውጭ ዝግጁ</span>
+                    <span class="sm:hidden">Offline</span>
+                </span>
+                <button onclick="openAddStudentModal()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 rounded-lg text-xs sm:text-sm font-bold flex items-center gap-1 shadow-sm transition">
+                    <i class="fa-solid fa-plus text-xs sm:text-sm"></i>
+                    <span class="hidden sm:inline">አዲስ ተማሪ መዝግብ</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic Body Content -->
+        <main class="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="tab-dashboard" class="tab-content space-y-4 sm:space-y-6">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+                    <div class="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] sm:text-xs font-semibold uppercase text-slate-500">ጠቅላላ ተማሪዎች</p>
+                            <h3 class="text-lg sm:text-2xl font-bold text-slate-900 mt-0.5 sm:mt-1" id="kpi-total-students">0</h3>
+                            <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1"><span id="kpi-male-cnt" class="text-blue-600 font-bold">0</span> ወ | <span id="kpi-female-cnt" class="text-pink-600 font-bold">0</span> ሴ</p>
+                        </div>
+                        <div class="w-9 h-9 sm:w-12 sm:h-12 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center text-base sm:text-xl flex-shrink-0">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] sm:text-xs font-semibold uppercase text-slate-500">በትምህርት ላይ ያሉ</p>
+                            <h3 class="text-lg sm:text-2xl font-bold text-emerald-600 mt-0.5 sm:mt-1" id="kpi-active-students">0</h3>
+                            <p class="text-[10px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 font-medium" id="kpi-active-pct">0%</p>
+                        </div>
+                        <div class="w-9 h-9 sm:w-12 sm:h-12 bg-emerald-100 text-emerald-700 rounded-lg flex items-center justify-center text-base sm:text-xl flex-shrink-0">
+                            <i class="fa-solid fa-user-check"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] sm:text-xs font-semibold uppercase text-slate-500">የቋረጡ / የተዛወሩ</p>
+                            <h3 class="text-lg sm:text-2xl font-bold text-rose-600 mt-0.5 sm:mt-1" id="kpi-inactive-students">0</h3>
+                            <p class="text-[10px] sm:text-xs text-rose-600 mt-0.5 sm:mt-1 font-medium" id="kpi-inactive-pct">0%</p>
+                        </div>
+                        <div class="w-9 h-9 sm:w-12 sm:h-12 bg-rose-100 text-rose-700 rounded-lg flex items-center justify-center text-base sm:text-xl flex-shrink-0">
+                            <i class="fa-solid fa-user-xmark"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] sm:text-xs font-semibold uppercase text-slate-500">የት/ቤቱ አማካይ ውጤት</p>
+                            <h3 class="text-lg sm:text-2xl font-bold text-indigo-600 mt-0.5 sm:mt-1" id="kpi-avg-score">0.0%</h3>
+                            <p class="text-[10px] sm:text-xs text-indigo-600 mt-0.5 sm:mt-1 font-medium">ከ 100%</p>
+                        </div>
+                        <div class="w-9 h-9 sm:w-12 sm:h-12 bg-indigo-100 text-indigo-700 rounded-lg flex items-center justify-center text-base sm:text-xl flex-shrink-0">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 class="font-bold text-xs sm:text-sm text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-bar text-amber-500"></i>
+                            የተማሪዎች ብዛት በክፍል (1ኛ - 8ኛ ክፍል)
+                        </h4>
+                        <div class="h-52 sm:h-64 relative">
+                            <canvas id="gradeDistChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 class="font-bold text-xs sm:text-sm text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-emerald-600"></i>
+                            የተማሪዎች ሁኔታ እና የጾታ ስብጥር
+                        </h4>
+                        <div class="h-52 sm:h-64 relative flex justify-center items-center">
+                            <canvas id="statusGenderChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-3 sm:p-4 border-b border-slate-200 flex items-center justify-between">
+                        <h4 class="font-bold text-xs sm:text-sm text-slate-800">በቅርቡ የተመዘገቡ ተማሪዎች</h4>
+                        <button onclick="switchTab('students')" class="text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline">ሁሉንም ይመልከቱ &rarr;</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs sm:text-sm text-slate-600 whitespace-nowrap">
+                            <thead class="bg-slate-100 text-slate-700 font-semibold text-[11px] sm:text-xs border-b border-slate-200">
+                                <tr>
+                                    <th class="py-2.5 px-3 sm:px-4 text-left">መታወቂያ</th>
+                                    <th class="py-2.5 px-3 sm:px-4 text-left">ተማሪ ሙሉ ስም</th>
+                                    <th class="py-2.5 px-3 sm:px-4 text-center">ጾታ</th>
+                                    <th class="py-2.5 px-3 sm:px-4 text-center">ክፍል</th>
+                                    <th class="py-2.5 px-3 sm:px-4 text-center">ሴክሽን</th>
+                                    <th class="py-2.5 px-3 sm:px-4 text-center">ሁኔታ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-recent-table" class="divide-y divide-slate-100 text-left">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: STUDENTS REGISTRATION & MANAGEMENT -->
+            <section id="tab-students" class="tab-content hidden space-y-4">
+                <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-center">
+                    <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full md:w-auto items-center">
+                        <div class="relative col-span-2 sm:w-56 md:w-64">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" id="search-student" oninput="renderStudentsTable()" placeholder="በስም ወይም ID ፈልግ..." class="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        <select id="filter-grade" onchange="renderStudentsTable()" class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <option value="ALL">ሁሉም ክፍሎች</option>
+                            <option value="1">1ኛ ክፍል</option>
+                            <option value="2">2ኛ ክፍል</option>
+                            <option value="3">3ኛ ክፍል</option>
+                            <option value="4">4ኛ ክፍል</option>
+                            <option value="5">5ኛ ክፍል</option>
+                            <option value="6">6ኛ ክፍል</option>
+                            <option value="7">7ኛ ክፍል</option>
+                            <option value="8">8ኛ ክፍል</option>
+                        </select>
+                        <select id="filter-section" onchange="renderStudentsTable()" class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <option value="ALL">ሁሉም ሴክሽን</option>
+                            <option value="ሀ">ሴክሽን ሀ</option>
+                            <option value="ለ">ሴክሽን ለ</option>
+                            <option value="ሐ">ሴክሽን ሐ</option>
+                            <option value="መ">ሴክሽን መ</option>
+                        </select>
+                        <select id="filter-status" onchange="renderStudentsTable()" class="col-span-2 sm:col-span-1 border border-slate-300 rounded-lg px-2 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <option value="ALL">ሁሉም ሁኔታ</option>
+                            <option value="Active">በትምህርት ላይ</option>
+                            <option value="Inactive">የቋረጠ/የተዛወረ</option>
+                        </select>
+                    </div>
+
+                    <button onclick="openAddStudentModal()" class="w-full md:w-auto bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>አዲስ ተማሪ መዝግብ</span>
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs sm:text-sm text-slate-600 whitespace-nowrap">
+                            <thead class="bg-slate-900 text-slate-100 font-medium text-[11px] sm:text-xs">
+                                <tr>
+                                    <th class="py-3 px-3 sm:px-4 text-left">መታወቂያ</th>
+                                    <th class="py-3 px-3 sm:px-4 text-left">የተማሪ ሙሉ ስም</th>
+                                    <th class="py-3 px-3 sm:px-4 text-center">ጾታ</th>
+                                    <th class="py-3 px-3 sm:px-4 text-center">ክፍል</th>
+                                    <th class="py-3 px-3 sm:px-4 text-center">ሴክሽን</th>
+                                    <th class="py-3 px-3 sm:px-4 text-left">የወላጅ/አስተዳዳሪ ስም</th>
+                                    <th class="py-3 px-3 sm:px-4 text-left">ስልክ ቁጥር</th>
+                                    <th class="py-3 px-3 sm:px-4 text-center">ሁኔታ</th>
+                                    <th class="py-3 px-3 sm:px-4 text-center">ተግባራት</th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-table-body" class="divide-y divide-slate-200 text-left">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center">
+                        <span id="student-count-summary">ጠቅላላ ተማሪዎች: 0</span>
+                        <span class="hidden sm:inline">ደብረ ብርሃን ማዕከል አቡነ ጎርጎርዮስ ትምህርት ቤት መረጃ ቋት</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: SECTION & STATUS BREAKDOWN -->
+            <section id="tab-attendance" class="tab-content hidden space-y-4 sm:space-y-6">
+                <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-900 text-base sm:text-lg mb-1">የተማሪዎች በትምህርት ላይ የመገኘትና የቋረጡ ሁኔታ በሴክሽን</h3>
+                    <p class="text-xs text-slate-500 mb-4 sm:mb-6">ደብረ ብርሃን ማዕከል አቡነ ጎርጎርዮስ ትምህርት ቤት የሁሉም ክፍሎች (1ኛ-8ኛ) የተማሪዎች ስታቲስቲክስ።</p>
+
+                    <div class="flex flex-wrap gap-4 mb-4 sm:mb-6">
+                        <div class="w-full sm:w-auto">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ክፍል መረጣ</label>
+                            <select id="section-view-grade" onchange="renderSectionStatusGrid()" class="w-full sm:w-auto border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="ALL">ሁሉም ክፍሎች (1-8)</option>
+                                <option value="1">1ኛ ክፍል</option>
+                                <option value="2">2ኛ ክፍል</option>
+                                <option value="3">3ኛ ክፍል</option>
+                                <option value="4">4ኛ ክፍል</option>
+                                <option value="5">5ኛ ክፍል</option>
+                                <option value="6">6ኛ ክፍል</option>
+                                <option value="7">7ኛ ክፍል</option>
+                                <option value="8">8ኛ ክፍል</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="section-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: MARKS ENTRY -->
+            <section id="tab-marks" class="tab-content hidden space-y-4 sm:space-y-6">
+                <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-900 text-base sm:text-lg mb-3 sm:mb-4">የተማሪዎች ውጤት ማስገቢያ (20%, 30% & 50%)</h3>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mb-4 sm:mb-6 bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200">
+                        <div>
+                            <label class="block text-[11px] sm:text-xs font-semibold text-slate-700 mb-1">ሴሚስተር *</label>
+                            <select id="marks-semester-select" onchange="populateMarksEntryTable()" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="sem1">1ኛ ሰሚስተር</option>
+                                <option value="sem2">2ኛ ሰሚስተር</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] sm:text-xs font-semibold text-slate-700 mb-1">ክፍል መረጣ *</label>
+                            <select id="marks-grade-select" onchange="updateSubjectsAndTable()" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="1">1ኛ ክፍል</option>
+                                <option value="2">2ኛ ክፍል</option>
+                                <option value="3">3ኛ ክፍል</option>
+                                <option value="4">4ኛ ክፍል</option>
+                                <option value="5">5ኛ ክፍል</option>
+                                <option value="6">6ኛ ክፍል</option>
+                                <option value="7">7ኛ ክፍል</option>
+                                <option value="8">8ኛ ክፍል</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] sm:text-xs font-semibold text-slate-700 mb-1">ሴክሽን *</label>
+                            <select id="marks-section-select" onchange="populateMarksEntryTable()" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="ሀ">ሴክሽን ሀ (A)</option>
+                                <option value="ለ">ሴክሽን ለ (B)</option>
+                                <option value="ሐ">ሴክሽን ሐ (C)</option>
+                                <option value="መ">ሴክሽን መ (D)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] sm:text-xs font-semibold text-slate-700 mb-1">ትምህርት ዓይነት *</label>
+                            <select id="marks-subject-select" onchange="populateMarksEntryTable()" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs sm:text-sm text-slate-600 whitespace-nowrap">
+                            <thead class="bg-slate-900 text-white font-medium text-[11px] sm:text-xs">
+                                <tr>
+                                    <th class="py-2.5 px-2 sm:px-3 text-left">ተማሪ ID</th>
+                                    <th class="py-2.5 px-2 sm:px-3 text-left">የተማሪ ሙሉ ስም</th>
+                                    <th class="py-2.5 px-2 sm:px-3 text-center">ወርሃዊ (20%)</th>
+                                    <th class="py-2.5 px-2 sm:px-3 text-center">ሚድ (30%)</th>
+                                    <th class="py-2.5 px-2 sm:px-3 text-center">ፋይናል (50%)</th>
+                                    <th class="py-2.5 px-2 sm:px-3 text-center">ጠቅላላ (100%)</th>
+                                    <th class="py-2.5 px-2 sm:px-3 text-center">ደረጃ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="marks-entry-tbody" class="divide-y divide-slate-200">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 flex justify-end">
+                        <button onclick="saveAllMarks()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-6 py-2.5 rounded-lg text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-md transition">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>ውጤቶችን መዝግብ / አስቀምጥ</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: SEMESTER ROSTER -->
+            <section id="tab-roster" class="tab-content hidden space-y-4 sm:space-y-6">
+                <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm no-print">
+                    <h3 class="font-bold text-slate-900 text-base sm:text-lg mb-3">የሰሚስተር ሮስተር (Semester Roster)</h3>
+                    <div class="flex flex-wrap gap-3 items-end">
+                        <div class="flex-1 sm:flex-none">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ክፍል</label>
+                            <select id="roster-grade-select" onchange="renderSemesterRoster()" class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="1">1ኛ ክፍል</option>
+                                <option value="2">2ኛ ክፍል</option>
+                                <option value="3">3ኛ ክፍል</option>
+                                <option value="4">4ኛ ክፍል</option>
+                                <option value="5">5ኛ ክፍል</option>
+                                <option value="6">6ኛ ክፍል</option>
+                                <option value="7">7ኛ ክፍል</option>
+                                <option value="8">8ኛ ክፍል</option>
+                            </select>
+                        </div>
+                        <div class="flex-1 sm:flex-none">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ሴክሽን</label>
+                            <select id="roster-section-select" onchange="renderSemesterRoster()" class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="ሀ">ሴክሽን ሀ (A)</option>
+                                <option value="ለ">ሴክሽን ለ (B)</option>
+                                <option value="ሐ">ሴክሽን ሐ (C)</option>
+                                <option value="መ">ሴክሽን መ (D)</option>
+                            </select>
+                        </div>
+                        <button onclick="window.print()" class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-print"></i>
+                            <span>ሮስተሩን አትም (Print)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="roster-print-area" class="bg-white p-3 sm:p-6 rounded-xl border border-slate-300 shadow-sm">
+                    <div class="text-center border-b-2 border-slate-900 pb-3 sm:pb-4 mb-3 sm:mb-4">
+                        <h2 class="text-base sm:text-xl font-extrabold uppercase text-slate-900">ደብረ ብርሃን ማዕከል አቡነ ጎርጎርዮስ ትምህርት ቤት</h2>
+                        <p class="text-xs sm:text-sm font-bold text-slate-700">የ1ኛ እና 2ኛ ሰሚስተር አጠቃላይ ውጤት ሮስተር (Annual Mark Roster)</p>
+                        <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5"><span id="roster-header-info" class="font-bold">ክፍል 1 - ሴክሽን ሀ</span></p>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-[9px] sm:text-[10px] border-collapse border border-slate-800 text-center whitespace-nowrap">
+                            <thead id="roster-thead" class="bg-slate-100 text-slate-900 font-bold">
+                            </thead>
+                            <tbody id="roster-tbody" class="divide-y divide-slate-800">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 6: SUBJECT-WISE ANALYSIS -->
+            <section id="tab-analytics" class="tab-content hidden space-y-4 sm:space-y-6">
+                <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-base sm:text-lg">የውጤት ትንተና በየትምህርት ዓይነት (Performance Breakdown)</h3>
+                            <p class="text-xs text-slate-500">ከ50 በታች፣ ከ60 በታች፣ ከ60 በላይ፣ ከ75 በላይ እና ከ85 በላይ በወንድ (ወ)፣ ሴት (ሴ)፣ ድምር (ድ) ትንተና።</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 mb-4 sm:mb-6 bg-slate-50 p-3 sm:p-4 rounded-lg border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ክፍል ማጣሪያ</label>
+                            <select id="analytics-grade-filter" onchange="renderSubjectAnalysisTable()" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="ALL">ሁሉም ክፍሎች (1-8)</option>
+                                <option value="1">1ኛ ክፍል</option>
+                                <option value="2">2ኛ ክፍል</option>
+                                <option value="3">3ኛ ክፍል</option>
+                                <option value="4">4ኛ ክፍል</option>
+                                <option value="5">5ኛ ክፍል</option>
+                                <option value="6">6ኛ ክፍል</option>
+                                <option value="7">7ኛ ክፍል</option>
+                                <option value="8">8ኛ ክፍል</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ሴክሽን ማጣሪያ</label>
+                            <select id="analytics-section-filter" onchange="renderSubjectAnalysisTable()" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="ALL">ሁሉም ሴክሽኖች</option>
+                                <option value="ሀ">ሴክሽን ሀ (A)</option>
+                                <option value="ለ">ሴክሽን ለ (B)</option>
+                                <option value="ሐ">ሴክሽን ሐ (C)</option>
+                                <option value="መ">ሴክሽን መ (D)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">የፈተና ዓይነት</label>
+                            <select id="analytics-exam-filter" onchange="renderSubjectAnalysisTable()" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="total">አጠቃላይ ድምር (ከ 100%)</option>
+                                <option value="monthly">ወርሃዊ ፈተና (ከ 20%)</option>
+                                <option value="mid">ሚድ ፈተና (ከ 30%)</option>
+                                <option value="final">ፋይናል ፈተና (ከ 50%)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-[11px] sm:text-xs border-collapse border border-slate-300 text-center whitespace-nowrap">
+                            <thead class="bg-slate-900 text-white font-semibold">
+                                <tr>
+                                    <th rowspan="2" class="border border-slate-700 py-2 px-2 text-left">የትምህርት ዓይነት</th>
+                                    <th colspan="4" class="border border-slate-700 py-1 bg-red-900/80">ከ 50 በታች (<50%)</th>
+                                    <th colspan="4" class="border border-slate-700 py-1 bg-amber-800/80">ከ 60 በታች (<60%)</th>
+                                    <th colspan="4" class="border border-slate-700 py-1 bg-blue-900/80">ከ 60 በላይ (≥60%)</th>
+                                    <th colspan="4" class="border border-slate-700 py-1 bg-indigo-900/80">ከ 75 በላይ (≥75%)</th>
+                                    <th colspan="4" class="border border-slate-700 py-1 bg-emerald-900/80">ከ 85 በላይ (≥85%)</th>
+                                </tr>
+                                <tr class="bg-slate-800 text-slate-200">
+                                    <th class="border border-slate-700 py-0.5 px-1">ወ</th><th class="border border-slate-700 py-0.5 px-1">ሴ</th><th class="border border-slate-700 py-0.5 px-1">ድ</th><th class="border border-slate-700 py-0.5 px-1">%</th>
+                                    <th class="border border-slate-700 py-0.5 px-1">ወ</th><th class="border border-slate-700 py-0.5 px-1">ሴ</th><th class="border border-slate-700 py-0.5 px-1">ድ</th><th class="border border-slate-700 py-0.5 px-1">%</th>
+                                    <th class="border border-slate-700 py-0.5 px-1">ወ</th><th class="border border-slate-700 py-0.5 px-1">ሴ</th><th class="border border-slate-700 py-0.5 px-1">ድ</th><th class="border border-slate-700 py-0.5 px-1">%</th>
+                                    <th class="border border-slate-700 py-0.5 px-1">ወ</th><th class="border border-slate-700 py-0.5 px-1">ሴ</th><th class="border border-slate-700 py-0.5 px-1">ድ</th><th class="border border-slate-700 py-0.5 px-1">%</th>
+                                    <th class="border border-slate-700 py-0.5 px-1">ወ</th><th class="border border-slate-700 py-0.5 px-1">ሴ</th><th class="border border-slate-700 py-0.5 px-1">ድ</th><th class="border border-slate-700 py-0.5 px-1">%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subject-analysis-tbody" class="divide-y divide-slate-200 font-mono">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 7: STUDENT REPORT CARDS -->
+            <section id="tab-reports" class="tab-content hidden space-y-4 sm:space-y-6">
+                <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm no-print">
+                    <h3 class="font-bold text-slate-900 text-base sm:text-lg mb-3">የተማሪ ውጤት ካርድ (Printable Report Card)</h3>
+                    <div class="flex flex-wrap gap-3 items-end">
+                        <div class="w-full sm:w-80">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ተማሪ ይምረጡ</label>
+                            <select id="report-student-select" onchange="generateReportCard()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </select>
+                        </div>
+                        <button onclick="window.print()" class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-print"></i>
+                            <span>ካርዱን አትም (Print)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Print Template Area -->
+                <div id="report-card-container" class="bg-white p-4 sm:p-8 rounded-xl border border-gray-300 shadow-md max-w-4xl mx-auto card-print">
+                    <div class="border-2 sm:border-4 border-double border-slate-800 p-3 sm:p-6">
+                        <!-- Card Header -->
+                        <div class="text-center border-b-2 border-slate-800 pb-3 sm:pb-4 mb-4 sm:mb-6 flex flex-col items-center">
+                            <svg class="w-14 h-14 sm:w-20 sm:h-20 mb-2" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="goldGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#fbbf24"/>
+                                        <stop offset="100%" stop-color="#78350f"/>
+                                    </linearGradient>
+                                    <path id="textArcTop2" d="M 25,100 A 75,75 0 1,1 175,100" />
+                                    <path id="textArcBottom2" d="M 175,100 A 75,75 0 0,1 25,100" />
+                                </defs>
+                                <circle cx="100" cy="100" r="95" fill="#0f172a" stroke="url(#goldGrad2)" stroke-width="7"/>
+                                <circle cx="100" cy="100" r="60" fill="#1e293b" stroke="#f59e0b" stroke-width="3"/>
+                                <path d="M 100 52 L 100 124 M 70 80 L 130 80" stroke="#fbbf24" stroke-width="8" stroke-linecap="round"/>
+                                <circle cx="100" cy="80" r="16" fill="none" stroke="#fef3c7" stroke-width="3"/>
+                                <text font-family="'Noto Sans Ethiopic', sans-serif" font-size="12" font-weight="bold" fill="#fef08a">
+                                    <textPath href="#textArcTop2" startOffset="50%" text-anchor="middle">
+                                        ደብረ ብርሃን ማዕከል አቡነ ጎርጎርዮስ ት/ቤት
+                                    </textPath>
+                                </text>
+                                <text font-family="sans-serif" font-size="7.5" font-weight="bold" fill="#ffffff">
+                                    <textPath href="#textArcBottom2" startOffset="50%" text-anchor="middle">
+                                        DEBRE BIRHAN CENTER ABUNE GORGORIOS SCHOOL
+                                    </textPath>
+                                </text>
+                            </svg>
+                            <h2 class="text-base sm:text-2xl font-bold uppercase tracking-wide text-slate-900">ደብረ ብርሃን ማዕከል አቡነ ጎርጎርዮስ ትምህርት ቤት</h2>
+                            <p class="text-[10px] sm:text-xs font-bold text-amber-700 tracking-wider font-sans mb-1">DEBRE BIRHAN CENTER ABUNE GORGORIOS SCHOOL</p>
+                            <p class="text-[11px] sm:text-xs text-gray-600 font-medium">የተማሪዎች ዓመታዊ ውጤት ካርድ (Annual Academic Report Card)</p>
+                            <p class="text-[10px] sm:text-xs text-gray-500 mt-0.5">ደብረ ብርሃን፣ ኢትዮጵያ</p>
+                        </div>
+
+                        <!-- Student Meta details -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs font-semibold mb-4 sm:mb-6 bg-slate-50 p-3 sm:p-4 border border-slate-300 rounded-lg">
+                            <p><span class="text-slate-500">የተማሪ ሙሉ ስም:</span> <span id="rc-student-name" class="font-bold text-slate-900 font-sans text-xs sm:text-sm"></span></p>
+                            <p><span class="text-slate-500">መታወቂያ ቁጥር:</span> <span id="rc-student-id" class="font-mono font-bold text-slate-900"></span></p>
+                            <p><span class="text-slate-500">ክፍል እና ሴክሽን:</span> <span id="rc-student-grade" class="font-bold text-slate-900"></span></p>
+                            <p><span class="text-slate-500">ጾታ:</span> <span id="rc-student-gender" class="font-bold text-slate-900"></span></p>
+                        </div>
+
+                        <!-- Report Card Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs border-collapse border border-slate-900 text-center mb-4 sm:mb-6">
+                                <thead class="bg-slate-100 text-slate-900 font-bold">
+                                    <tr>
+                                        <th class="border border-slate-900 py-1.5 sm:py-2 px-2 sm:px-3 text-left">የትምህርት ዓይነት</th>
+                                        <th class="border border-slate-900 py-1.5 sm:py-2 px-2 sm:px-3">1ኛ ሰሚስተር</th>
+                                        <th class="border border-slate-900 py-1.5 sm:py-2 px-2 sm:px-3">2ኛ ሰሚስተር</th>
+                                        <th class="border border-slate-900 py-1.5 sm:py-2 px-2 sm:px-3">የዓመቱ አማካይ</th>
+                                        <th class="border border-slate-900 py-1.5 sm:py-2 px-2 sm:px-3">ደረጃ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rc-marks-table" class="divide-y divide-slate-900">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Aggregate Stats -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 border border-slate-900 p-3 sm:p-4 bg-slate-50 text-xs sm:text-sm mb-4 sm:mb-6">
+                            <div>
+                                <span class="block text-xs font-bold text-slate-800">1ኛ ሰሚስተር:</span>
+                                <p class="text-xs">አማካይ: <span id="rc-sem1-avg" class="font-bold text-blue-900">0.0%</span></p>
+                                <p class="text-xs">ደረጃ: <span id="rc-sem1-rank" class="font-bold text-emerald-800">-</span></p>
+                            </div>
+                            <div>
+                                <span class="block text-xs font-bold text-slate-800">2ኛ ሰሚስተር:</span>
+                                <p class="text-xs">አማካይ: <span id="rc-sem2-avg" class="font-bold text-blue-900">0.0%</span></p>
+                                <p class="text-xs">ደረጃ: <span id="rc-sem2-rank" class="font-bold text-emerald-800">-</span></p>
+                            </div>
+                            <div class="sm:border-l sm:border-slate-300 sm:pl-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200">
+                                <span class="block text-xs font-bold text-amber-900">የዓመቱ አጠቃላይ ውጤት:</span>
+                                <p class="text-xs">አማካይ: <span id="rc-year-avg" class="font-bold text-indigo-900 text-xs sm:text-sm">0.0%</span></p>
+                                <p class="text-xs">የዓመቱ ደረጃ (Rank): <span id="rc-year-rank" class="font-bold text-emerald-700 text-xs sm:text-sm">-</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Signatures -->
+                        <div class="grid grid-cols-2 gap-4 sm:gap-8 pt-4 sm:pt-6 mt-4 sm:mt-8 border-t border-slate-400 text-[10px] sm:text-xs">
+                            <div class="text-center">
+                                <div class="h-8 sm:h-10"></div>
+                                <p class="border-t border-dashed border-slate-800 pt-1 font-semibold">የክፍሉ መምህር ፊርማ</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="h-8 sm:h-10"></div>
+                                <p class="border-t border-dashed border-slate-800 pt-1 font-semibold">የር/መምህር ፊርማና ማህተም</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 8: BULK UPLOAD / IMPORT (EXCEL FORMAT) -->
+            <section id="tab-upload" class="tab-content hidden space-y-4 sm:space-y-6">
+                <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm space-y-4 sm:space-y-6">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base sm:text-lg mb-1">የተማሪ መረጃ እና ውጤት በ Excel ፋይል ማስገቢያ (Bulk Excel Import)</h3>
+                        <p class="text-xs text-slate-500">በቀላሉ የተማሪዎችን ዝርዝር እና የትምህርት ውጤቶችን ከ Excel (.xlsx / .xls) ፋይል በቀጥታ መጫን ይችላሉ።</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                        <!-- Student Excel Import Box -->
+                        <div class="border-2 border-dashed border-emerald-300 bg-emerald-50/40 p-4 sm:p-5 rounded-xl space-y-3 sm:space-y-4">
+                            <div class="flex items-center space-x-3 space-x-reverse">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-base sm:text-lg flex-shrink-0">
+                                    <i class="fa-solid fa-file-excel"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-xs sm:text-sm text-slate-800">1. የተማሪዎች ዝርዝር Excel አፕሎድ</h4>
+                                    <p class="text-[11px] sm:text-xs text-slate-500">የተማሪዎችን ስም፣ ጾታ፣ ክፍል፣ ሴክሽን እና የወላጅ መረጃ ያስገቡ</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-2.5 sm:p-3 rounded-lg border border-slate-200 text-xs space-y-1.5 sm:space-y-2">
+                                <p class="font-semibold text-slate-700">የExcel Header Row:</p>
+                                <code class="block bg-slate-100 p-2 rounded text-[10px] sm:text-[11px] font-mono overflow-x-auto text-slate-800">Name, Gender, Grade, Section, Parent, Phone, Status</code>
+                                <button onclick="downloadStudentExcelTemplate()" class="text-xs text-emerald-700 hover:text-emerald-900 font-bold flex items-center gap-1 mt-1">
+                                    <i class="fa-solid fa-file-arrow-down"></i> የናሙና Excel (.xlsx) ፋይል አውርድ
+                                </button>
+                            </div>
+
+                            <div>
+                                <input type="file" id="student-excel-file" accept=".xlsx, .xls" class="hidden" onchange="handleStudentExcelUpload(event)">
+                                <button onclick="document.getElementById('student-excel-file').click()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white py-2.5 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    <span>የተማሪዎች Excel ፋይል ይምረጡ</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Marks Excel Import Box -->
+                        <div class="border-2 border-dashed border-blue-300 bg-blue-50/40 p-4 sm:p-5 rounded-xl space-y-3 sm:space-y-4">
+                            <div class="flex items-center space-x-3 space-x-reverse">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-base sm:text-lg flex-shrink-0">
+                                    <i class="fa-solid fa-file-pen"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-xs sm:text-sm text-slate-800">2. የተማሪዎች ውጤት Excel አፕሎድ</h4>
+                                    <p class="text-[11px] sm:text-xs text-slate-500">የተማሪዎችን የወርሃዊ፣ ሚድ እና ፋይናል ፈተና ውጤት ማስገቢያ</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-2.5 sm:p-3 rounded-lg border border-slate-200 text-xs space-y-1.5 sm:space-y-2">
+                                <p class="font-semibold text-slate-700">የExcel Header Row:</p>
+                                <code class="block bg-slate-100 p-2 rounded text-[10px] sm:text-[11px] font-mono overflow-x-auto text-slate-800">StudentID, Subject, Monthly, Mid, Final</code>
+                                <button onclick="downloadMarksExcelTemplate()" class="text-xs text-blue-700 hover:text-blue-900 font-bold flex items-center gap-1 mt-1">
+                                    <i class="fa-solid fa-file-arrow-down"></i> የውጤት ናሙና Excel (.xlsx) ፋይል አውርድ
+                                </button>
+                            </div>
+
+                            <div>
+                                <input type="file" id="marks-excel-file" accept=".xlsx, .xls" class="hidden" onchange="handleMarksExcelUpload(event)">
+                                <button onclick="document.getElementById('marks-excel-file').click()" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white py-2.5 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition">
+                                    <i class="fa-solid fa-file-excel"></i>
+                                    <span>የውጤት Excel ፋይል ይምረጡ</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Import Logs Table -->
+                    <div id="import-preview-container" class="hidden space-y-3 pt-4 border-t border-slate-200">
+                        <h4 class="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-emerald-600"></i>
+                            የአፕሎድ ውጤት ዝርዝር (Import Logs)
+                        </h4>
+                        <div class="bg-slate-900 text-slate-100 p-3 sm:p-4 rounded-xl text-[11px] sm:text-xs font-mono space-y-1 max-h-48 overflow-y-auto" id="import-log-box">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 9: CHANGE PASSWORD -->
+            <section id="tab-change-pwd" class="tab-content hidden space-y-6">
+                <div class="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm max-w-md mx-auto space-y-4">
+                    <div class="border-b pb-3">
+                        <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-key text-amber-500"></i>
+                            የይለፍ ቃል ቀይር (Change Password)
+                        </h3>
+                        <p class="text-xs text-slate-500">አሁን የገቡበትን የተጠቃሚ አካውንት የይለፍ ቃል እዚህ መቀየር ይችላሉ።</p>
+                    </div>
+
+                    <form onsubmit="handleChangePassword(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">የአሁኑ የይለፍ ቃል *</label>
+                            <input type="password" id="pwd-current" required placeholder="••••••••" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">አዲስ የይለፍ ቃል *</label>
+                            <input type="password" id="pwd-new" required placeholder="••••••••" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">አዲሱን የይለፍ ቃል አረጋግጥ *</label>
+                            <input type="password" id="pwd-confirm" required placeholder="••••••••" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+
+                        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 py-2.5 rounded-lg text-xs sm:text-sm font-bold shadow-md transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>አዲሱን የይለፍ ቃል አስቀምጥ</span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 10: BACKUP & RESTORE -->
+            <section id="tab-settings" class="tab-content hidden space-y-4 sm:space-y-6">
+                <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm space-y-4 sm:space-y-6">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base sm:text-lg mb-1">መረጃ ማስቀመጫ እና መመለሻ (Data Backup & Restore)</h3>
+                        <p class="text-xs text-slate-500">መረጃው 100% በስልክዎ/ኮምፒውተርዎ ላይ ይቀመጣል። መረጃዎችን በ JSON ፋይል ባክአፕ መውሰድና መመለስ ይችላሉ።</p>
+                    </div>
+
+                    <hr class="border-slate-200">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                        <div class="border border-blue-200 bg-blue-50/50 p-4 sm:p-5 rounded-xl space-y-3">
+                            <h4 class="font-bold text-xs sm:text-sm text-blue-900 flex items-center gap-2">
+                                <i class="fa-solid fa-download"></i>
+                                መረጃዎችን ባክአፕ አውርድ (Export Backup)
+                            </h4>
+                            <p class="text-xs text-slate-600">የተማሪዎች እና የውጤት መረጃዎችን በ JSON ፋይል መሳሪያዎ ላይ ያስቀምጡ።</p>
+                            <button onclick="exportDataJSON()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold">
+                                ባክአፕ ፋይል አውርድ (.json)
+                            </button>
+                        </div>
+
+                        <div class="border border-emerald-200 bg-emerald-50/50 p-4 sm:p-5 rounded-xl space-y-3">
+                            <h4 class="font-bold text-xs sm:text-sm text-emerald-900 flex items-center gap-2">
+                                <i class="fa-solid fa-upload"></i>
+                                መረጃዎችን ወደ ሶፍትዌሩ መልስ (Import Backup)
+                            </h4>
+                            <p class="text-xs text-slate-600">ቀደም ሲል የወረደውን JSON ባክአፕ ፋይል በመምረጥ መረጃዎችን ይመልሱ።</p>
+                            <input type="file" id="import-file" accept=".json" class="hidden" onchange="importDataJSON(event)">
+                            <button onclick="document.getElementById('import-file').click()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold">
+                                ባክአፕ ፋይል ምረጥ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- STUDENT MODAL -->
+    <div id="student-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg my-auto overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 text-white p-3.5 sm:p-4 flex justify-between items-center">
+                <h3 id="modal-title" class="font-bold text-xs sm:text-base">አዲስ ተማሪ መዝግብ</h3>
+                <button onclick="closeStudentModal()" class="text-slate-300 hover:text-white p-1 text-base sm:text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <form id="student-form" onsubmit="handleSaveStudent(event)" class="p-4 sm:p-5 space-y-3 sm:space-y-4 overflow-y-auto flex-1">
+                <input type="hidden" id="student-edit-id">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">የተማሪ ሙሉ ስም *</label>
+                    <input type="text" id="form-fullname" required placeholder="ምሳሌ፡ አበበ ከበደ አለሙ" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">ጾታ *</label>
+                        <select id="form-gender" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                            <option value="ወንድ">ወንድ</option>
+                            <option value="ሴት">ሴት</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">ሁኔታ *</label>
+                        <select id="form-status" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                            <option value="Active">በትምህርት ላይ</option>
+                            <option value="Inactive">የቋረጠ/የተዛወረ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">ክፍል (1-8) *</label>
+                        <select id="form-grade" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                            <option value="1">1ኛ ክፍል</option>
+                            <option value="2">2ኛ ክፍል</option>
+                            <option value="3">3ኛ ክፍል</option>
+                            <option value="4">4ኛ ክፍል</option>
+                            <option value="5">5ኛ ክፍል</option>
+                            <option value="6">6ኛ ክፍል</option>
+                            <option value="7">7ኛ ክፍል</option>
+                            <option value="8">8ኛ ክፍል</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">ሴክሽን *</label>
+                        <select id="form-section" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                            <option value="ሀ">ሴክሽን ሀ (A)</option>
+                            <option value="ለ">ሴክሽን ለ (B)</option>
+                            <option value="ሐ">ሴክሽን ሐ (C)</option>
+                            <option value="መ">ሴክሽን መ (D)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">የወላጅ/አስተዳዳሪ ስም</label>
+                    <input type="text" id="form-parent-name" placeholder="ምሳሌ፡ ከበደ አለሙ" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">የተገናኛ ስልክ ቁጥር</label>
+                    <input type="tel" id="form-phone" placeholder="0911000000" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+
+                <div class="pt-3 sm:pt-4 flex justify-end gap-2 sm:gap-3 border-t border-slate-200">
+                    <button type="button" onclick="closeStudentModal()" class="px-3.5 py-2 border border-slate-300 text-slate-700 text-xs sm:text-sm rounded-lg hover:bg-slate-100">ሰርዝ</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 text-xs sm:text-sm rounded-lg font-bold">አስቀምጥ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl shadow-lg flex items-center gap-2.5 text-xs sm:text-sm">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-message">መረጃው በተሳካ ሁኔታ ተቀምጧል!</span>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Subjects Definition
+        const primarySubjects = ["አማርኛ", "እንግሊዘኛ", "ሒሳብ", "አካባቢ ሳይንስ", "ግእዝ", "ሥነ ምግባር", "ሥነ ጥበባት", "ስፖርት", "አይሲቲ"];
+        const middleSubjects = ["አማርኛ", "እንግሊዘኛ", "ሒሳብ", "ጄኔራል ሳይንስ", "ግእዝ", "ኅብረተሰብ", "ዜግነት", "ሙያ", "ሥነ ጥበብ", "ስፖርት", "አይሲቲ"];
+
+        // Passwords definition
+        let ROLE_PASSWORDS = JSON.parse(localStorage.getItem('abune_gorgorios_passwords')) || {
+            office_head: "office123",
+            principal: "admin123",
+            homeroom: "home123",
+            subject_teacher: "teacher123",
+            student: "student123",
+            parent: "parent123"
+        };
+
+        let currentUser = null;
+
+        const initialSampleStudents = [
+            { id: "STU-1001", name: "አበበ ከበደ ታደሰ", gender: "ወንድ", grade: "1", section: "ሀ", status: "Active", parent: "ከበደ ታደሰ", phone: "0911121314" },
+            { id: "STU-1002", name: "ሰላም አበበ ማሞ", gender: "ሴት", grade: "1", section: "ሀ", status: "Active", parent: "አበበ ማሞ", phone: "0922232425" },
+            { id: "STU-1003", name: "ዮናስ መኮንን ካሳ", gender: "ወንድ", grade: "4", section: "ለ", status: "Inactive", parent: "መኮንን ካሳ", phone: "0933343536" },
+            { id: "STU-1004", name: "ሀና ኃይሉ ተስፋዬ", gender: "ሴት", grade: "7", section: "ሀ", status: "Active", parent: "ኃይሉ ተስፋዬ", phone: "0944454647" },
+            { id: "STU-1005", name: "ዳዊት ጌታቸው በቀለ", gender: "ወንድ", grade: "7", section: "ለ", status: "Active", parent: "ጌታቸው በቀለ", phone: "0955565758" },
+            { id: "STU-1006", name: "ትግስት እሸቱ ታደለ", gender: "ሴት", grade: "8", section: "ሀ", status: "Active", parent: "እሸቱ ታደለ", phone: "0966676869" }
+        ];
+
+        const initialSampleMarks = {
+            "STU-1001": {
+                "sem1": {
+                    "አማርኛ": { monthly: 18, mid: 27, final: 45 },
+                    "እንግሊዘኛ": { monthly: 16, mid: 24, final: 42 },
+                    "ሒሳብ": { monthly: 19, mid: 28, final: 48 }
+                },
+                "sem2": {
+                    "አማርኛ": { monthly: 17, mid: 26, final: 44 },
+                    "እንግሊዘኛ": { monthly: 18, mid: 25, final: 45 },
+                    "ሒሳብ": { monthly: 19, mid: 29, final: 49 }
+                }
+            }
+        };
+
+        let students = [];
+        let marks = {};
+        let activeTab = 'dashboard';
+
+        let gradeDistChartInstance = null;
+        let statusGenderChartInstance = null;
+
+        window.onload = function() {
+            loadData();
+            updateLoginCredentialsHint();
+        };
+
+        function loadData() {
+            const savedStudents = localStorage.getItem('abune_gorgorios_students');
+            const savedMarks = localStorage.getItem('abune_gorgorios_marks');
+
+            if (savedStudents) {
+                students = JSON.parse(savedStudents);
+            } else {
+                students = [...initialSampleStudents];
+                localStorage.setItem('abune_gorgorios_students', JSON.stringify(students));
+            }
+
+            if (savedMarks) {
+                marks = JSON.parse(savedMarks);
+            } else {
+                marks = { ...initialSampleMarks };
+                localStorage.setItem('abune_gorgorios_marks', JSON.stringify(marks));
+            }
+        }
+
+        function updateLoginCredentialsHint() {
+            const role = document.getElementById('login-role').value;
+            const hintEl = document.getElementById('hint-text');
+            const studentField = document.getElementById('student-id-field');
+
+            if (role === 'student' || role === 'parent') {
+                studentField.classList.remove('hidden');
+            } else {
+                studentField.classList.add('hidden');
+            }
+
+            const hints = {
+                office_head: 'የቢሮ ኃላፊ ፓስወርድ፡ <b>office123</b> (ሙሉ ተቆጣጣሪ / Master Access)',
+                principal: 'የር/መምህር ፓስወርድ፡ <b>admin123</b> (ሙሉ ስልጣን)',
+                homeroom: 'የስም ጠሪ ፓስወርድ፡ <b>home123</b> (ሮስተርና ውጤት ካርድ)',
+                subject_teacher: 'የሰብጀክት መምህር ፓስወርድ፡ <b>teacher123</b> (ውጤት ማስገቢያ)',
+                student: 'የተማሪ ፓስወርድ፡ <b>student123</b> (ውጤት ካርድ ብቻ)',
+                parent: 'የወላጅ ፓስወርድ፡ <b>parent123</b> (የልጅ ውጤት ካርድ)'
+            };
+            hintEl.innerHTML = hints[role] || '';
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const role = document.getElementById('login-role').value;
+            const pwd = document.getElementById('login-password').value;
+            const studentId = document.getElementById('login-student-id').value.trim();
+
+            if (pwd !== ROLE_PASSWORDS[role]) {
+                alert("የተሳሳተ የይለፍ ቃል አስገብተዋል!");
+                return;
+            }
+
+            if ((role === 'student' || role === 'parent') && studentId) {
+                const found = students.find(s => s.id.toLowerCase() === studentId.toLowerCase());
+                if (!found) {
+                    alert("የተጠቀሰው የተማሪ ID አልተገኘም!");
+                    return;
+                }
+            }
+
+            currentUser = { role, studentId };
+            document.getElementById('login-modal').classList.add('hidden');
+
+            applyRolePermissions();
+            showToast("በስኬት ገብተዋል!");
+        }
+
+        function applyRolePermissions() {
+            const role = currentUser ? currentUser.role : 'principal';
+            const navButtons = {
+                dashboard: document.getElementById('nav-dashboard'),
+                students: document.getElementById('nav-students'),
+                attendance: document.getElementById('nav-attendance'),
+                marks: document.getElementById('nav-marks'),
+                roster: document.getElementById('nav-roster'),
+                analytics: document.getElementById('nav-analytics'),
+                reports: document.getElementById('nav-reports'),
+                upload: document.getElementById('nav-upload'),
+                changePwd: document.getElementById('nav-change-pwd'),
+                settings: document.getElementById('nav-settings')
+            };
+
+            Object.values(navButtons).forEach(btn => btn && btn.classList.remove('hidden'));
+
+            const roleTitles = {
+                office_head: "የቢሮ ኃላፊ (Office Head)",
+                principal: "ርዕሰ መምህር (Principal)",
+                homeroom: "የክፍል ስም ጠሪ መምህር",
+                subject_teacher: "የትምህርት ዓይነት መምህር",
+                student: "ተማሪ",
+                parent: "ወላጅ"
+            };
+            document.getElementById('admin-name-display').innerText = roleTitles[role] || "ተጠቃሚ";
+
+            if (role === 'subject_teacher') {
+                navButtons.students.classList.add('hidden');
+                navButtons.roster.classList.add('hidden');
+                navButtons.upload.classList.add('hidden');
+                navButtons.settings.classList.add('hidden');
+                switchTab('marks');
+            } else if (role === 'homeroom') {
+                navButtons.upload.classList.add('hidden');
+                navButtons.settings.classList.add('hidden');
+                switchTab('roster');
+            } else if (role === 'student' || role === 'parent') {
+                navButtons.dashboard.classList.add('hidden');
+                navButtons.students.classList.add('hidden');
+                navButtons.attendance.classList.add('hidden');
+                navButtons.marks.classList.add('hidden');
+                navButtons.roster.classList.add('hidden');
+                navButtons.analytics.classList.add('hidden');
+                navButtons.upload.classList.add('hidden');
+                navButtons.settings.classList.add('hidden');
+
+                switchTab('reports');
+
+                if (currentUser.studentId) {
+                    const sel = document.getElementById('report-student-select');
+                    if (sel) {
+                        sel.value = currentUser.studentId;
+                        generateReportCard();
+                    }
+                }
+            } else {
+                switchTab('dashboard');
+            }
+        }
+
+        function logoutUser() {
+            currentUser = null;
+            document.getElementById('login-password').value = "";
+            document.getElementById('login-modal').classList.remove('hidden');
+            showToast("ከሲስተሙ ወጥተዋል");
+        }
+
+        function saveData() {
+            localStorage.setItem('abune_gorgorios_students', JSON.stringify(students));
+            localStorage.setItem('abune_gorgorios_marks', JSON.stringify(marks));
+        }
+
+        function switchTab(tabId) {
+            activeTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            
+            const target = document.getElementById(`tab-${tabId}`);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('sidebar-item-active'));
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) activeNav.classList.add('sidebar-item-active');
+
+            const titles = {
+                dashboard: 'ዳሽቦርድ',
+                students: 'የተማሪዎች ምዝገባ',
+                attendance: 'የሴክሽን ሁኔታ',
+                marks: 'ውጤት ማስገቢያ',
+                roster: 'የሰሚስተር ሮስተር',
+                analytics: 'የውጤት ትንተና',
+                reports: 'የተማሪ ውጤት ካርድ',
+                upload: 'Excel ፋይል አፕሎድ',
+                'change-pwd': 'የይለፍ ቃል ቀይር',
+                settings: 'መረጃ ማስቀመጫ / መመለሻ'
+            };
+            document.getElementById('page-title').innerText = titles[tabId] || 'ዳሽቦርድ';
+
+            if (tabId === 'dashboard') renderDashboard();
+            if (tabId === 'students') renderStudentsTable();
+            if (tabId === 'attendance') renderSectionStatusGrid();
+            if (tabId === 'marks') updateSubjectsAndTable();
+            if (tabId === 'roster') renderSemesterRoster();
+            if (tabId === 'analytics') renderSubjectAnalysisTable();
+            if (tabId === 'reports') populateStudentReportDropdown();
+
+            // Auto-close mobile sidebar when navigating
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 768) {
+                toggleSidebar();
+            }
+        }
+
+        // --- STUDENT MANAGEMENT ---
+        function renderStudentsTable() {
+            const q = document.getElementById('search-student').value.toLowerCase();
+            const g = document.getElementById('filter-grade').value;
+            const sec = document.getElementById('filter-section').value;
+            const st = document.getElementById('filter-status').value;
+
+            const filtered = students.filter(s => {
+                const matchQ = s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q);
+                const matchG = g === 'ALL' || s.grade === g;
+                const matchSec = sec === 'ALL' || s.section === sec;
+                const matchSt = st === 'ALL' || s.status === st;
+                return matchQ && matchG && matchSec && matchSt;
+            });
+
+            document.getElementById('student-count-summary').innerText = `ጠቅላላ ተማሪዎች: ${filtered.length}`;
+            const tbody = document.getElementById('students-table-body');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">ምንም ተማሪ አልተገኘም</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(s => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 font-mono text-xs font-bold text-slate-700">${s.id}</td>
+                    <td class="py-3 px-4 font-semibold text-slate-900">${s.name}</td>
+                    <td class="py-3 px-4 text-center">${s.gender}</td>
+                    <td class="py-3 px-4 text-center font-bold">${s.grade}ኛ ክፍል</td>
+                    <td class="py-3 px-4 text-center">${s.section}</td>
+                    <td class="py-3 px-4">${s.parent || '-'}</td>
+                    <td class="py-3 px-4 font-mono text-xs">${s.phone || '-'}</td>
+                    <td class="py-3 px-4 text-center">
+                        <span class="px-2.5 py-1 text-xs rounded-full font-bold ${s.status === 'Active' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                            ${s.status === 'Active' ? 'በትምህርት ላይ' : 'የቋረጠ'}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-center space-x-2 space-x-reverse">
+                        <button onclick="openEditStudentModal('${s.id}')" class="text-blue-600 hover:text-blue-800 text-base" title="አስተካክል"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteStudent('${s.id}')" class="text-rose-500 hover:text-rose-700 text-base" title="ሰርዝ"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddStudentModal() {
+            document.getElementById('modal-title').innerText = "አዲስ ተማሪ መዝግብ";
+            document.getElementById('student-edit-id').value = "";
+            document.getElementById('student-form').reset();
+            document.getElementById('student-modal').classList.remove('hidden');
+        }
+
+        function openEditStudentModal(id) {
+            const s = students.find(x => x.id === id);
+            if (!s) return;
+            document.getElementById('modal-title').innerText = "የተማሪ መረጃ አስተካክል";
+            document.getElementById('student-edit-id').value = s.id;
+            document.getElementById('form-fullname').value = s.name;
+            document.getElementById('form-gender').value = s.gender;
+            document.getElementById('form-status').value = s.status;
+            document.getElementById('form-grade').value = s.grade;
+            document.getElementById('form-section').value = s.section;
+            document.getElementById('form-parent-name').value = s.parent || "";
+            document.getElementById('form-phone').value = s.phone || "";
+            document.getElementById('student-modal').classList.remove('hidden');
+        }
+
+        function closeStudentModal() {
+            document.getElementById('student-modal').classList.add('hidden');
+        }
+
+        function handleSaveStudent(e) {
+            e.preventDefault();
+            const editId = document.getElementById('student-edit-id').value;
+            const name = document.getElementById('form-fullname').value.trim();
+            const gender = document.getElementById('form-gender').value;
+            const status = document.getElementById('form-status').value;
+            const grade = document.getElementById('form-grade').value;
+            const section = document.getElementById('form-section').value;
+            const parent = document.getElementById('form-parent-name').value.trim();
+            const phone = document.getElementById('form-phone').value.trim();
+
+            if (editId) {
+                const idx = students.findIndex(s => s.id === editId);
+                if (idx !== -1) {
+                    students[idx] = { ...students[idx], name, gender, status, grade, section, parent, phone };
+                    showToast("የተማሪ መረጃ ተሻሽሏል!");
+                }
+            } else {
+                const newId = `STU-${1000 + students.length + 1}`;
+                students.push({ id: newId, name, gender, status, grade, section, parent, phone });
+                showToast("አዲስ ተማሪ ተመዝግቧል!");
+            }
+
+            saveData();
+            closeStudentModal();
+            renderStudentsTable();
+            if (activeTab === 'dashboard') renderDashboard();
+        }
+
+        function deleteStudent(id) {
+            if (confirm("እርግጠኛ ነዎት ይህንን ተማሪ መሰረዝ ይፈልጋሉ?")) {
+                students = students.filter(s => s.id !== id);
+                delete marks[id];
+                saveData();
+                renderStudentsTable();
+                showToast("ተማሪው ተሰርዟል");
+            }
+        }
+
+        // --- SECTION BREAKDOWN ---
+        function renderSectionStatusGrid() {
+            const gradeFilter = document.getElementById('section-view-grade').value;
+            const grid = document.getElementById('section-cards-grid');
+            grid.innerHTML = "";
+
+            const grades = gradeFilter === 'ALL' ? ['1','2','3','4','5','6','7','8'] : [gradeFilter];
+            const sections = ['ሀ', 'ለ', 'ሐ', 'መ'];
+
+            grades.forEach(g => {
+                sections.forEach(sec => {
+                    const secStus = students.filter(s => s.grade === g && s.section === sec);
+                    if (secStus.length > 0 || gradeFilter !== 'ALL') {
+                        const act = secStus.filter(s => s.status === 'Active').length;
+                        const inact = secStus.filter(s => s.status === 'Inactive').length;
+
+                        grid.innerHTML += `
+                            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                                <div class="flex items-center justify-between border-b pb-2 mb-3">
+                                    <h4 class="font-bold text-slate-900">${g}ኛ ክፍል - ሴክሽን ${sec}</h4>
+                                    <span class="text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">ጠቅላላ: ${secStus.length}</span>
+                                </div>
+                                <div class="space-y-1.5 text-xs">
+                                    <div class="flex justify-between items-center bg-emerald-50 p-2 rounded text-emerald-800">
+                                        <span><i class="fa-solid fa-user-check"></i> በትምህርት ላይ:</span>
+                                        <span class="font-bold">${act}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center bg-rose-50 p-2 rounded text-rose-800">
+                                        <span><i class="fa-solid fa-user-xmark"></i> የቋረጡ/የተዛወሩ:</span>
+                                        <span class="font-bold">${inact}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            });
+        }
+
+        // --- MARKS ENTRY ---
+        function updateSubjectsAndTable() {
+            const grade = document.getElementById('marks-grade-select').value;
+            const subSelect = document.getElementById('marks-subject-select');
+            const list = (Number(grade) <= 6) ? primarySubjects : middleSubjects;
+
+            subSelect.innerHTML = list.map(sub => `<option value="${sub}">${sub}</option>`).join('');
+            populateMarksEntryTable();
+        }
+
+        function populateMarksEntryTable() {
+            const sem = document.getElementById('marks-semester-select').value;
+            const grade = document.getElementById('marks-grade-select').value;
+            const section = document.getElementById('marks-section-select').value;
+            const subject = document.getElementById('marks-subject-select').value;
+
+            const filtered = students.filter(s => s.grade === grade && s.section === section && s.status === 'Active');
+            const tbody = document.getElementById('marks-entry-tbody');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">በዚህ ክፍልና ሴክሽን ምንም ንቁ ተማሪ አልተገኘም</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(s => {
+                const sMarks = (marks[s.id] && marks[s.id][sem] && marks[s.id][sem][subject]) ? marks[s.id][sem][subject] : { monthly: 0, mid: 0, final: 0 };
+                const total = (Number(sMarks.monthly)||0) + (Number(sMarks.mid)||0) + (Number(sMarks.final)||0);
+
+                return `
+                    <tr class="hover:bg-slate-50 text-center">
+                        <td class="py-2 px-3 text-left font-mono text-xs font-semibold text-slate-500">${s.id}</td>
+                        <td class="py-2 px-3 text-left font-bold text-slate-800">${s.name}</td>
+                        <td class="py-2 px-3">
+                            <input type="number" min="0" max="20" value="${sMarks.monthly}" data-id="${s.id}" data-type="monthly" oninput="calculateRowTotal(this)" class="w-16 border border-slate-300 rounded px-2 py-1 text-center font-mono">
+                        </td>
+                        <td class="py-2 px-3">
+                            <input type="number" min="0" max="30" value="${sMarks.mid}" data-id="${s.id}" data-type="mid" oninput="calculateRowTotal(this)" class="w-16 border border-slate-300 rounded px-2 py-1 text-center font-mono">
+                        </td>
+                        <td class="py-2 px-3">
+                            <input type="number" min="0" max="50" value="${sMarks.final}" data-id="${s.id}" data-type="final" oninput="calculateRowTotal(this)" class="w-16 border border-slate-300 rounded px-2 py-1 text-center font-mono">
+                        </td>
+                        <td class="py-2 px-3 font-bold text-blue-800 font-mono text-base row-total">${total}</td>
+                        <td class="py-2 px-3 font-bold row-grade">${calculateGradeLetter(total)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function calculateRowTotal(input) {
+            const tr = input.closest('tr');
+            const monthly = Number(tr.querySelector('[data-type="monthly"]').value) || 0;
+            const mid = Number(tr.querySelector('[data-type="mid"]').value) || 0;
+            const final = Number(tr.querySelector('[data-type="final"]').value) || 0;
+            const total = monthly + mid + final;
+
+            tr.querySelector('.row-total').innerText = total;
+            tr.querySelector('.row-grade').innerText = calculateGradeLetter(total);
+        }
+
+        function calculateGradeLetter(score) {
+            if (score >= 90) return 'A+';
+            if (score >= 83) return 'A';
+            if (score >= 75) return 'B+';
+            if (score >= 68) return 'B';
+            if (score >= 60) return 'C+';
+            if (score >= 50) return 'C';
+            if (score >= 40) return 'D';
+            return 'F';
+        }
+
+        function saveAllMarks() {
+            const sem = document.getElementById('marks-semester-select').value;
+            const subject = document.getElementById('marks-subject-select').value;
+            const rows = document.querySelectorAll('#marks-entry-tbody tr');
+
+            rows.forEach(tr => {
+                const monthlyInput = tr.querySelector('[data-type="monthly"]');
+                if (!monthlyInput) return;
+                const studentId = monthlyInput.getAttribute('data-id');
+                const monthly = Number(tr.querySelector('[data-type="monthly"]').value) || 0;
+                const mid = Number(tr.querySelector('[data-type="mid"]').value) || 0;
+                const final = Number(tr.querySelector('[data-type="final"]').value) || 0;
+
+                if (!marks[studentId]) marks[studentId] = {};
+                if (!marks[studentId][sem]) marks[studentId][sem] = {};
+                marks[studentId][sem][subject] = { monthly, mid, final };
+            });
+
+            saveData();
+            showToast("ውጤቶቹ በተሳካ ሁኔታ ተመዝግበዋል!");
+        }
+
+        // --- SEMESTER ROSTER ---
+        function renderSemesterRoster() {
+            const grade = document.getElementById('roster-grade-select').value;
+            const section = document.getElementById('roster-section-select').value;
+            const subjects = Number(grade) <= 6 ? primarySubjects : middleSubjects;
+
+            document.getElementById('roster-header-info').innerText = `${grade}ኛ ክፍል - ሴክሽን ${section}`;
+
+            const classStudents = students.filter(s => s.grade === grade && s.section === section && s.status === 'Active');
+
+            const thead = document.getElementById('roster-thead');
+            thead.innerHTML = `
+                <tr>
+                    <th rowspan="2" class="border border-slate-800 py-2 px-2 text-left">መታወቂያ</th>
+                    <th rowspan="2" class="border border-slate-800 py-2 px-2 text-left">ተማሪ ሙሉ ስም</th>
+                    <th rowspan="2" class="border border-slate-800 py-2 px-1">ጾታ</th>
+                    ${subjects.map(s => `<th colspan="3" class="border border-slate-800 py-1 px-1 bg-slate-200">${s}</th>`).join('')}
+                    <th colspan="3" class="border border-slate-800 py-1 px-2 bg-amber-100">አጠቃላይ አማካይ</th>
+                    <th rowspan="2" class="border border-slate-800 py-2 px-2">የዓመቱ ደረጃ</th>
+                </tr>
+                <tr class="bg-slate-50 text-[9px]">
+                    ${subjects.map(() => `
+                        <th class="border border-slate-800 p-0.5">1ኛ</th>
+                        <th class="border border-slate-800 p-0.5">2ኛ</th>
+                        <th class="border border-slate-800 p-0.5 bg-amber-50">አማካይ</th>
+                    `).join('')}
+                    <th class="border border-slate-800 p-0.5 font-bold">1ኛ ሰሚ</th>
+                    <th class="border border-slate-800 p-0.5 font-bold">2ኛ ሰሚ</th>
+                    <th class="border border-slate-800 p-0.5 font-bold bg-amber-100">የዓመቱ</th>
+                </tr>
+            `;
+
+            if (classStudents.length === 0) {
+                document.getElementById('roster-tbody').innerHTML = `<tr><td colspan="${(subjects.length * 3) + 7}" class="py-4 text-center text-slate-400">ምንም ተማሪ የለም</td></tr>`;
+                return;
+            }
+
+            const computed = classStudents.map(s => {
+                const sMarks = marks[s.id] || {};
+                const sem1Marks = sMarks.sem1 || {};
+                const sem2Marks = sMarks.sem2 || {};
+
+                let sumSem1 = 0, sumSem2 = 0, sumYear = 0;
+                let countSem1 = 0, countSem2 = 0;
+                const subDetails = {};
+
+                subjects.forEach(sub => {
+                    const m1 = sem1Marks[sub] ? (sem1Marks[sub].monthly||0)+(sem1Marks[sub].mid||0)+(sem1Marks[sub].final||0) : 0;
+                    const m2 = sem2Marks[sub] ? (sem2Marks[sub].monthly||0)+(sem2Marks[sub].mid||0)+(sem2Marks[sub].final||0) : 0;
+                    const subAvg = (m1 + m2) / 2;
+
+                    subDetails[sub] = { m1, m2, avg: subAvg };
+
+                    if (sem1Marks[sub]) { sumSem1 += m1; countSem1++; }
+                    if (sem2Marks[sub]) { sumSem2 += m2; countSem2++; }
+                    sumYear += subAvg;
+                });
+
+                const sem1Avg = countSem1 > 0 ? (sumSem1 / subjects.length) : 0;
+                const sem2Avg = countSem2 > 0 ? (sumSem2 / subjects.length) : 0;
+                const yearAvg = sumYear / subjects.length;
+
+                return { ...s, subDetails, sem1Avg, sem2Avg, yearAvg };
+            });
+
+            computed.sort((a, b) => b.yearAvg - a.yearAvg);
+            computed.forEach((item, index) => item.rank = index + 1);
+
+            document.getElementById('roster-tbody').innerHTML = computed.map(s => `
+                <tr class="hover:bg-slate-50 font-mono text-xs">
+                    <td class="border border-slate-800 py-1.5 px-2 text-left font-bold">${s.id}</td>
+                    <td class="border border-slate-800 py-1.5 px-2 text-left font-sans font-semibold">${s.name}</td>
+                    <td class="border border-slate-800 py-1.5 px-1 font-sans">${s.gender}</td>
+                    ${subjects.map(sub => `
+                        <td class="border border-slate-800 p-1 text-slate-600">${s.subDetails[sub].m1 || '-'}</td>
+                        <td class="border border-slate-800 p-1 text-slate-600">${s.subDetails[sub].m2 || '-'}</td>
+                        <td class="border border-slate-800 p-1 font-bold bg-amber-50/50 text-slate-900">${s.subDetails[sub].avg ? s.subDetails[sub].avg.toFixed(1) : '-'}</td>
+                    `).join('')}
+                    <td class="border border-slate-800 py-1.5 px-2 font-bold text-blue-900">${s.sem1Avg.toFixed(1)}%</td>
+                    <td class="border border-slate-800 py-1.5 px-2 font-bold text-blue-900">${s.sem2Avg.toFixed(1)}%</td>
+                    <td class="border border-slate-800 py-1.5 px-2 font-bold bg-amber-100 text-slate-950">${s.yearAvg.toFixed(1)}%</td>
+                    <td class="border border-slate-800 py-1.5 px-2 font-bold text-emerald-800">${s.rank}</td>
+                </tr>
+            `).join('');
+        }
+
+        // --- SUBJECT-WISE ANALYSIS ---
+        function renderSubjectAnalysisTable() {
+            const gradeFilter = document.getElementById('analytics-grade-filter').value;
+            const sectionFilter = document.getElementById('analytics-section-filter').value;
+            const examFilter = document.getElementById('analytics-exam-filter').value;
+
+            const allSubjects = Array.from(new Set([...primarySubjects, ...middleSubjects]));
+            const tbody = document.getElementById('subject-analysis-tbody');
+
+            let filteredStudents = students.filter(s => s.status === 'Active');
+            if (gradeFilter !== 'ALL') filteredStudents = filteredStudents.filter(s => s.grade === gradeFilter);
+            if (sectionFilter !== 'ALL') filteredStudents = filteredStudents.filter(s => s.section === sectionFilter);
+
+            const totalCount = filteredStudents.length;
+
+            tbody.innerHTML = allSubjects.map(sub => {
+                let counts = {
+                    u50: { m: 0, f: 0, t: 0 },
+                    u60: { m: 0, f: 0, t: 0 },
+                    g60: { m: 0, f: 0, t: 0 },
+                    g75: { m: 0, f: 0, t: 0 },
+                    g85: { m: 0, f: 0, t: 0 }
+                };
+
+                filteredStudents.forEach(s => {
+                    const sm1 = marks[s.id] && marks[s.id].sem1 && marks[s.id].sem1[sub];
+                    const sm2 = marks[s.id] && marks[s.id].sem2 && marks[s.id].sem2[sub];
+                    if (!sm1 && !sm2) return;
+
+                    let score1 = sm1 ? (sm1.monthly||0)+(sm1.mid||0)+(sm1.final||0) : 0;
+                    let score2 = sm2 ? (sm2.monthly||0)+(sm2.mid||0)+(sm2.final||0) : 0;
+                    let score = (score1 + score2) / 2;
+
+                    const isMale = s.gender === 'ወንድ';
+
+                    if (score < 50) { counts.u50.t++; if(isMale) counts.u50.m++; else counts.u50.f++; }
+                    if (score < 60) { counts.u60.t++; if(isMale) counts.u60.m++; else counts.u60.f++; }
+                    if (score >= 60) { counts.g60.t++; if(isMale) counts.g60.m++; else counts.g60.f++; }
+                    if (score >= 75) { counts.g75.t++; if(isMale) counts.g75.m++; else counts.g75.f++; }
+                    if (score >= 85) { counts.g85.t++; if(isMale) counts.g85.m++; else counts.g85.f++; }
+                });
+
+                const pct = (val) => totalCount > 0 ? ((val / totalCount) * 100).toFixed(0) + '%' : '0%';
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="border border-slate-300 py-2 px-3 text-left font-sans font-bold text-slate-800">${sub}</td>
+                        <td class="border border-slate-300 py-1.5 px-1">${counts.u50.m}</td>
+                        <td class="border border-slate-300 py-1.5 px-1">${counts.u50.f}</td>
+                        <td class="border border-slate-300 py-1.5 px-1 font-bold text-rose-600">${counts.u50.t}</td>
+                        <td class="border border-slate-300 py-1.5 px-1 bg-rose-50 font-bold">${pct(counts.u50.t)}</td>
+
+                        <td class="border border-slate-300 py-1.5 px-1">${counts.u60.m}</td>
+                        <td class="border border-slate-300 py-1.5 px-1">${counts.u60.f}</td>
+                        <td class="border border-slate-300 py-1.5 px-1 font-bold text-amber-600">${counts.u60.t}</td>
+                        <td class="border border-slate-300 py-1.5 px-1 bg-amber-50 font-bold">${pct(counts.u60.t)}</td>
+
+                        <td class="border border-slate-300 py-1.5 px-1">${counts.g60.m}</td>
+                        <td class="border border-slate-300 py-1.5 px-1">${counts.g60.f}</td>
+                        <td class="border border-slate-300 py-1.5 px-1 font-bold text-blue-600">${counts.g60.t}</td>
+                        <td class="border border-slate-300 py-1.5 px-1 bg-blue-50 font-bold">${pct(counts.g60.t)}</td>
+
+                        <td class="border border-slate-300 py-1.5 px-1">${counts.g75.m}</td>
+                        <td class="border border-slate-300 py-1.5 px-1">${counts.g75.f}</td>
+                        <td class="border border-slate-300 py-1.5 px-1 font-bold text-indigo-600">${counts.g75.t}</td>
+                        <td class="border border-slate-300 py-1.5 px-1 bg-indigo-50 font-bold">${pct(counts.g75.t)}</td>
+
+                        <td class="border border-slate-300 py-1.5 px-1">${counts.g85.m}</td>
+                        <td class="border border-slate-300 py-1.5 px-1">${counts.g85.f}</td>
+                        <td class="border border-slate-300 py-1.5 px-1 font-bold text-emerald-600">${counts.g85.t}</td>
+                        <td class="border border-slate-300 py-1.5 px-1 bg-emerald-50 font-bold">${pct(counts.g85.t)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // --- REPORT CARDS ---
+        function populateStudentReportDropdown() {
+            const select = document.getElementById('report-student-select');
+            select.innerHTML = students.map(s => `<option value="${s.id}">${s.grade}ኛ ክፍል - ሴክሽን ${s.section} | ${s.name} (${s.id})</option>`).join('');
+            if (students.length > 0) generateReportCard();
+        }
+
+        function generateReportCard() {
+            const studentId = document.getElementById('report-student-select').value;
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+
+            document.getElementById('rc-student-name').innerText = student.name;
+            document.getElementById('rc-student-id').innerText = student.id;
+            document.getElementById('rc-student-grade').innerText = `${student.grade}ኛ ክፍል - ሴክሽን ${student.section}`;
+            document.getElementById('rc-student-gender').innerText = student.gender;
+
+            const subjects = Number(student.grade) <= 6 ? primarySubjects : middleSubjects;
+            const sMarks = marks[student.id] || {};
+            const sem1Marks = sMarks.sem1 || {};
+            const sem2Marks = sMarks.sem2 || {};
+
+            const tbody = document.getElementById('rc-marks-table');
+
+            let sem1Total = 0, sem2Total = 0, yearTotal = 0;
+            let count1 = 0, count2 = 0;
+
+            tbody.innerHTML = subjects.map(sub => {
+                const item1 = sem1Marks[sub] || { monthly: 0, mid: 0, final: 0 };
+                const item2 = sem2Marks[sub] || { monthly: 0, mid: 0, final: 0 };
+
+                const score1 = item1.monthly + item1.mid + item1.final;
+                const score2 = item2.monthly + item2.mid + item2.final;
+                const avg = (score1 + score2) / 2;
+
+                if (sem1Marks[sub]) { sem1Total += score1; count1++; }
+                if (sem2Marks[sub]) { sem2Total += score2; count2++; }
+                yearTotal += avg;
+
+                return `
+                    <tr>
+                        <td class="border border-slate-900 py-2 px-3 text-left font-semibold">${sub}</td>
+                        <td class="border border-slate-900 py-2 px-3 font-mono text-slate-800">${score1 || '-'}</td>
+                        <td class="border border-slate-900 py-2 px-3 font-mono text-slate-800">${score2 || '-'}</td>
+                        <td class="border border-slate-900 py-2 px-3 font-mono font-bold text-blue-900">${avg ? avg.toFixed(1) : '-'}</td>
+                        <td class="border border-slate-900 py-2 px-3 font-bold">${avg ? calculateGradeLetter(avg) : '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const sem1Avg = count1 > 0 ? (sem1Total / subjects.length) : 0;
+            const sem2Avg = count2 > 0 ? (sem2Total / subjects.length) : 0;
+            const yearAvg = yearTotal / subjects.length;
+
+            document.getElementById('rc-sem1-avg').innerText = `${sem1Avg.toFixed(1)}%`;
+            document.getElementById('rc-sem2-avg').innerText = `${sem2Avg.toFixed(1)}%`;
+            document.getElementById('rc-year-avg').innerText = `${yearAvg.toFixed(1)}%`;
+
+            // Calculate Ranks
+            const sameSec = students.filter(s => s.grade === student.grade && s.section === student.section);
+            const calculateRanksFor = (semKey) => {
+                const ranks = sameSec.map(s => {
+                    const sm = (marks[s.id] && marks[s.id][semKey]) || {};
+                    let tot = 0;
+                    Object.values(sm).forEach(x => tot += (x.monthly||0)+(x.mid||0)+(x.final||0));
+                    return { id: s.id, tot };
+                });
+                ranks.sort((a,b) => b.tot - a.tot);
+                return ranks.findIndex(r => r.id === student.id) + 1;
+            };
+
+            const rank1 = calculateRanksFor('sem1');
+            const rank2 = calculateRanksFor('sem2');
+
+            // Year rank
+            const yearRanks = sameSec.map(s => {
+                const sm1 = (marks[s.id] && marks[s.id].sem1) || {};
+                const sm2 = (marks[s.id] && marks[s.id].sem2) || {};
+                let tot1 = 0, tot2 = 0;
+                Object.values(sm1).forEach(x => tot1 += (x.monthly||0)+(x.mid||0)+(x.final||0));
+                Object.values(sm2).forEach(x => tot2 += (x.monthly||0)+(x.mid||0)+(x.final||0));
+                return { id: s.id, tot: (tot1 + tot2) / 2 };
+            });
+            yearRanks.sort((a,b) => b.tot - a.tot);
+            const yearRank = yearRanks.findIndex(r => r.id === student.id) + 1;
+
+            document.getElementById('rc-sem1-rank').innerText = `${rank1}ኛ ከ ${sameSec.length}`;
+            document.getElementById('rc-sem2-rank').innerText = `${rank2}ኛ ከ ${sameSec.length}`;
+            document.getElementById('rc-year-rank').innerText = `${yearRank}ኛ ከ ${sameSec.length}`;
+        }
+
+        // --- EXCEL IMPORT / UPLOAD LOGIC ---
+        function downloadStudentExcelTemplate() {
+            const templateData = [
+                { "Name": "አልማዝ ተስፋዬ", "Gender": "ሴት", "Grade": "1", "Section": "ሀ", "Parent": "ተስፋዬ በቀለ", "Phone": "0911223344", "Status": "Active" },
+                { "Name": "ዮሴፍ አለሙ", "Gender": "ወንድ", "Grade": "2", "Section": "ለ", "Parent": "አለሙ ካሳ", "Phone": "0922334455", "Status": "Active" }
+            ];
+            const worksheet = XLSX.utils.json_to_sheet(templateData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "ተማሪዎች");
+            XLSX.writeFile(workbook, "የተማሪዎች_ምዝገባ_ናሙና.xlsx");
+        }
+
+        function downloadMarksExcelTemplate() {
+            const templateData = [
+                { "StudentID": "STU-1001", "Subject": "አማርኛ", "Monthly": 18, "Mid": 27, "Final": 45 },
+                { "StudentID": "STU-1001", "Subject": "እንግሊዘኛ", "Monthly": 17, "Mid": 25, "Final": 40 }
+            ];
+            const worksheet = XLSX.utils.json_to_sheet(templateData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "ውጤቶች");
+            XLSX.writeFile(workbook, "የውጤት_ማስገቢያ_ናሙና.xlsx");
+        }
+
+        function handleStudentExcelUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    let addedCount = 0;
+                    const logs = [];
+
+                    jsonData.forEach(row => {
+                        const name = row.Name || row['ስም'] || row['ተማሪ ስም'];
+                        const gender = row.Gender || row['ጾታ'] || 'ወንድ';
+                        const grade = row.Grade || row['ክፍል'] || '1';
+                        const section = row.Section || row['ሴክሽን'] || 'ሀ';
+                        const parent = row.Parent || row['ወላጅ'] || '';
+                        const phone = row.Phone || row['ስልክ'] || '';
+                        const status = row.Status || row['ሁኔታ'] || 'Active';
+
+                        if (name) {
+                            const newId = `STU-${1000 + students.length + 1}`;
+                            students.push({
+                                id: newId,
+                                name: name,
+                                gender: gender,
+                                grade: String(grade).replace(/[^0-9]/g, '') || '1',
+                                section: section,
+                                parent: parent,
+                                phone: phone,
+                                status: status
+                            });
+                            addedCount++;
+                            logs.push(`[ተመዝግቧል] ${newId}: ${name} (${grade}ኛ ክፍል-${section})`);
+                        }
+                    });
+
+                    saveData();
+                    showImportLogs(logs, `በተሳካ ሁኔታ ${addedCount} ተማሪዎች ከ Excel ተመዝግበዋል!`);
+                    showToast(`${addedCount} ተማሪዎች ከ Excel ተመዝግበዋል!`);
+                    e.target.value = '';
+                } catch (err) {
+                    alert("የ Excel ፋይሉን ማቀናበር አልተቻለም፡ " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function handleMarksExcelUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    let updatedCount = 0;
+                    const logs = [];
+
+                    jsonData.forEach(row => {
+                        const studentId = row.StudentID || row['ተማሪ ID'] || row['መታወቂያ'];
+                        const sem = row.Semester || 'sem1';
+                        const subject = row.Subject || row['ትምህርት'] || row['የትምህርት ዓይነት'];
+                        const monthly = Number(row.Monthly || row['ወርሃዊ']) || 0;
+                        const mid = Number(row.Mid || row['ሚድ']) || 0;
+                        const final = Number(row.Final || row['ፋይናል']) || 0;
+
+                        if (studentId && subject) {
+                            if (!marks[studentId]) marks[studentId] = {};
+                            if (!marks[studentId][sem]) marks[studentId][sem] = {};
+                            marks[studentId][sem][subject] = { monthly, mid, final };
+                            updatedCount++;
+                            logs.push(`[ውጤት ተመዝግቧል] ID ${studentId} -> ${subject}: ወርሃዊ(${monthly}), ሚድ(${mid}), ፋይናል(${final})`);
+                        }
+                    });
+
+                    saveData();
+                    showImportLogs(logs, `በተሳካ ሁኔታ የ${updatedCount} ተማሪዎች ውጤት ከ Excel ተመዝግቧል!`);
+                    showToast(`የ${updatedCount} ትምህርቶች ውጤት ተጫኗል!`);
+                    e.target.value = '';
+                } catch (err) {
+                    alert("የውጤት ፋይሉን ማቀናበር አልተቻለም፡ " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function showImportLogs(logs, summaryTitle) {
+            const container = document.getElementById('import-preview-container');
+            const logBox = document.getElementById('import-log-box');
+            container.classList.remove('hidden');
+
+            logBox.innerHTML = `<div class="text-emerald-400 font-bold mb-2">✔ ${summaryTitle}</div>` +
+                logs.map(l => `<div>${l}</div>`).join('');
+        }
+
+        function handleChangePassword(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const currPwd = document.getElementById('pwd-current').value;
+            const newPwd = document.getElementById('pwd-new').value;
+            const confirmPwd = document.getElementById('pwd-confirm').value;
+
+            const role = currentUser.role;
+            if (currPwd !== ROLE_PASSWORDS[role]) {
+                alert("የተሳሳተ የአሁኑ የይለፍ ቃል አስገብተዋል!");
+                return;
+            }
+
+            if (newPwd.length < 4) {
+                alert("አዲሱ የይለፍ ቃል ቢያንስ 4 ፊደላት/ቁጥሮች መሆን አለበት!");
+                return;
+            }
+
+            if (newPwd !== confirmPwd) {
+                alert("አዲሱ የይለፍ ቃል እና ማረጋገጫው አይመሳሰሉም!");
+                return;
+            }
+
+            ROLE_PASSWORDS[role] = newPwd;
+            localStorage.setItem('abune_gorgorios_passwords', JSON.stringify(ROLE_PASSWORDS));
+            
+            document.getElementById('pwd-current').value = "";
+            document.getElementById('pwd-new').value = "";
+            document.getElementById('pwd-confirm').value = "";
+
+            updateLoginCredentialsHint();
+            showToast("የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል!");
+        }
+
+        function exportDataJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ students, marks }));
+            const anchor = document.createElement('a');
+            anchor.setAttribute("href", dataStr);
+            anchor.setAttribute("download", `Abune_Gorgorios_Backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            showToast("ባክአፕ ፋይል ወርዷል!");
+        }
+
+        function importDataJSON(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const parsed = JSON.parse(evt.target.result);
+                    if (parsed.students && parsed.marks) {
+                        students = parsed.students;
+                        marks = parsed.marks;
+                        saveData();
+                        showToast("ባክአፕ በስኬት ተመልሷል!");
+                        renderDashboard();
+                    } else {
+                        alert("የተሳሳተ የባክአፕ ፋይል ፎርማት!");
+                    }
+                } catch (err) {
+                    alert("ፋይሉን ማንበብ አልተቻለም፡ " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+    </script>
+</body>
+</html>
